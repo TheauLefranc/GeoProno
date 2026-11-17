@@ -61,8 +61,11 @@ Dépôt GitHub public + images publiques sur GHCR : Portainer n'a besoin d'aucun
    | `JWT_SECRET` | 32+ caractères aléatoires (`openssl rand -hex 32`) |
    | `ALLOWED_EMAIL_DOMAINS` | `ecole.fr,etu.ecole.fr` |
    | `ADMIN_EMAILS` | `toi@ecole.fr` |
-   | `WEB_PORT` | `8080` (à mettre derrière ton reverse proxy HTTPS) |
+   | `WEB_PORT` | `8087` par défaut : n'importe quel port libre du serveur |
+   | `WEB_BIND` | `127.0.0.1` si un reverse proxy tourne sur la même machine (sinon laisse vide) |
    | `COOKIE_SECURE` | `true` en HTTPS, `false` seulement en HTTP simple |
+
+   Seul `WEB_PORT` est ouvert sur le serveur : Postgres et l'API restent sur le réseau privé de la stack, donc aucun conflit possible avec tes autres services (même s'ils utilisent 5432 ou 3000).
 
 4. **Redéploiement automatique** : dans la stack, active *GitOps updates* → **Webhook** et coche « Re-pull image ». Copie l'URL du webhook dans GitHub → Settings → Secrets and variables → Actions → secret `PORTAINER_WEBHOOK_URL` (environnement `production`). Chaque push sur `main` redéploie alors tout seul ; sans ce secret, l'étape est simplement sautée.
 
