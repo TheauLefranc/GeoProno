@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-React (Vite, TypeScript) SPA + Node/Express API (TypeScript, Prisma) + PostgreSQL. Docker images built by GitHub Actions, pushed to GHCR, deployed as a Portainer stack redeployed through its webhook.
+React (Vite, TypeScript) SPA + Node/Express API (TypeScript, Prisma) + PostgreSQL. Docker images built by GitHub Actions, pushed to GHCR; public GitHub repo and public images, so the Portainer repository stack needs no authentication and redeploys through its GitOps webhook.
 
 ## Users
 

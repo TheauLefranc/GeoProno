@@ -45,12 +45,14 @@ Tout en Docker : `docker compose up --build` puis http://localhost:8080.
 
 Tests : `cd server && npm test` (calcul des gains, cagnotte, recharge, fuseau horaire).
 
-## Déploiement (GitHub Actions + Portainer)
+## Déploiement (GitHub public → GHCR → Portainer)
 
-1. Pousse le dépôt sur GitHub. À chaque push sur `main`, le workflow vérifie l'API (migrations sur un vrai Postgres, typecheck, tests) et le front, puis publie
-   `ghcr.io/<owner>/geoprono-api` et `ghcr.io/<owner>/geoprono-web` (tags `latest` et SHA).
-2. Si les packages GHCR sont privés, ajoute le registre `ghcr.io` dans Portainer (Registries) avec un token GitHub `read:packages`, ou rends les packages publics.
-3. Dans Portainer : **Stacks → Add stack → Repository**, chemin `deploy/portainer-stack.yml`, et ces variables :
+Dépôt GitHub public + images publiques sur GHCR : Portainer n'a besoin d'aucune authentification.
+
+1. **Pousse le dépôt sur GitHub (public)**. À chaque push sur `main`, le workflow vérifie l'API (migrations sur un vrai Postgres, typecheck, tests) et le front, puis publie
+   `ghcr.io/<owner>/geoprono-api` et `ghcr.io/<owner>/geoprono-web` (tags `latest` et SHA). Aucun secret à créer pour ça : la CI utilise le `GITHUB_TOKEN` intégré.
+2. **Rends les images publiques (une seule fois, après le premier passage de la CI)** : ton profil GitHub → *Packages* → `geoprono-api` → *Package settings* → *Change visibility* → **Public**. Pareil pour `geoprono-web`.
+3. **Portainer** → Stacks → Add stack → **Repository** : URL du dépôt, référence `refs/heads/main`, compose path `deploy/portainer-stack.yml`, authentification désactivée, et ces variables :
 
    | Variable | Exemple |
    |---|---|
@@ -62,7 +64,9 @@ Tests : `cd server && npm test` (calcul des gains, cagnotte, recharge, fuseau ho
    | `WEB_PORT` | `8080` (à mettre derrière ton reverse proxy HTTPS) |
    | `COOKIE_SECURE` | `true` en HTTPS, `false` seulement en HTTP simple |
 
-4. Active **GitOps updates → Webhook** avec « Re-pull image and redeploy », copie l'URL du webhook dans le secret GitHub `PORTAINER_WEBHOOK_URL` (environnement `production`). Chaque push sur `main` redéploie alors automatiquement.
+4. **Redéploiement automatique** : dans la stack, active *GitOps updates* → **Webhook** et coche « Re-pull image ». Copie l'URL du webhook dans GitHub → Settings → Secrets and variables → Actions → secret `PORTAINER_WEBHOOK_URL` (environnement `production`). Chaque push sur `main` redéploie alors tout seul ; sans ce secret, l'étape est simplement sautée.
+
+Rien de secret n'est dans le code ni dans les images : mots de passe et clés sont des variables de la stack Portainer. Ne commite jamais de fichier `.env`.
 
 Les migrations Prisma s'appliquent au démarrage du conteneur API.
 

@@ -1,8 +1,9 @@
-# Portainer stack. Create it in Portainer > Stacks > Add stack > Repository,
-# compose path "deploy/portainer-stack.yml", then enable "GitOps updates" > Webhook
-# with "Re-pull image and redeploy": copy that webhook URL into the GitHub secret
-# PORTAINER_WEBHOOK_URL. Fill the variables below under "Environment variables".
-# Images are built and pushed to GHCR by GitHub Actions (.github/workflows/ci-cd.yml).
+# Portainer stack. Create it in Portainer > Stacks > Add stack > Repository
+# (public repo: no authentication), compose path "deploy/portainer-stack.yml",
+# then enable "GitOps updates" > Webhook with "Re-pull image": copy that webhook
+# URL into the GitHub secret PORTAINER_WEBHOOK_URL. Fill the variables below
+# under "Environment variables". Images are built by GitHub Actions and pushed
+# to GHCR (.github/workflows/ci-cd.yml); set both packages to Public once.
 services:
   db:
     image: postgres:17-alpine

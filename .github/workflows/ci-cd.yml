@@ -89,6 +89,8 @@ jobs:
           tags: |
             ghcr.io/${{ steps.owner.outputs.lc }}/${{ matrix.name }}:latest
             ghcr.io/${{ steps.owner.outputs.lc }}/${{ matrix.name }}:${{ github.sha }}
+          # Links the package to this repository on GitHub.
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
