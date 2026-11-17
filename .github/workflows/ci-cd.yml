@@ -103,9 +103,17 @@ jobs:
       - name: Call Portainer webhook
         env:
           WEBHOOK: ${{ secrets.PORTAINER_WEBHOOK_URL }}
+          # Repository variable, opt-in: "true" only if Portainer is reached on its own
+          # self-signed certificate (e.g. :9443). Prefer a URL behind a real certificate.
+          INSECURE: ${{ vars.PORTAINER_WEBHOOK_INSECURE }}
         run: |
           if [ -z "$WEBHOOK" ]; then
             echo "::warning::PORTAINER_WEBHOOK_URL secret not set — skipping deploy."
             exit 0
           fi
-          curl --fail --silent --show-error -X POST "$WEBHOOK"
+          opts=(--fail --silent --show-error --max-time 30)
+          if [ "$INSECURE" = "true" ]; then
+            echo "::warning::TLS verification disabled for the Portainer webhook (PORTAINER_WEBHOOK_INSECURE=true)."
+            opts+=(--insecure)
+          fi
+          curl "${opts[@]}" -X POST "$WEBHOOK"
