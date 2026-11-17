@@ -67,7 +67,7 @@ authRouter.post("/register", limiter, async (req, res) => {
     await applyBalanceChange(tx, { userId: u.id, amount: settings.signupBonus, type: "SIGNUP_BONUS", note: "Bienvenue sur GeoProno" });
     return u;
   });
-  setSession(res, user.id);
+  setSession(req, res, user.id);
   res.status(201).json({ user: await publicUser(user.id) });
 });
 
@@ -77,7 +77,7 @@ authRouter.post("/login", limiter, async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     throw new HttpError(401, "Email ou mot de passe incorrect.");
   }
-  setSession(res, user.id);
+  setSession(req, res, user.id);
   res.json({ user: await publicUser(user.id) });
 });
 

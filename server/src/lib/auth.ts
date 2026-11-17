@@ -22,12 +22,12 @@ declare global {
   }
 }
 
-export function setSession(res: Response, userId: string) {
+export function setSession(req: Request, res: Response, userId: string) {
   const token = jwt.sign({ sub: userId }, config.jwtSecret, { expiresIn: "30d" });
   res.cookie(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: config.cookieSecure,
+    secure: config.cookieSecure === "auto" ? req.secure : config.cookieSecure === "true",
     maxAge: MAX_AGE_MS,
     path: "/",
   });

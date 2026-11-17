@@ -63,7 +63,7 @@ Dépôt GitHub public + images publiques sur GHCR : Portainer n'a besoin d'aucun
    | `ADMIN_EMAILS` | `toi@ecole.fr` |
    | `WEB_PORT` | `8087` par défaut : n'importe quel port libre du serveur |
    | `WEB_BIND` | `127.0.0.1` si un reverse proxy tourne sur la même machine (sinon laisse vide) |
-   | `COOKIE_SECURE` | `true` en HTTPS, `false` seulement en HTTP simple |
+   | `COOKIE_SECURE` | laisse vide (`auto` : cookie sécurisé seulement quand le site est en HTTPS) |
 
    Seul `WEB_PORT` est ouvert sur le serveur : Postgres et l'API restent sur le réseau privé de la stack, donc aucun conflit possible avec tes autres services (même s'ils utilisent 5432 ou 3000).
 

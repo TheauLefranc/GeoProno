@@ -16,7 +16,15 @@ export const config = {
   /** Emails promoted to ADMIN when they sign up. */
   adminEmails: list(process.env.ADMIN_EMAILS),
   timezone: process.env.TZ_REFILL ?? "Europe/Paris",
-  cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === "true" : isProd,
+  /**
+   * "auto" (default): Secure cookie only when the request arrived over HTTPS
+   * (directly or via a proxy's X-Forwarded-Proto). A Secure cookie on a plain-HTTP
+   * site is silently dropped by browsers, which logs everyone out instantly.
+   */
+  cookieSecure: (["true", "false"].includes(process.env.COOKIE_SECURE ?? "") ? process.env.COOKIE_SECURE : "auto") as
+    | "true"
+    | "false"
+    | "auto",
 };
 
 if (isProd && config.jwtSecret.length < 32) {

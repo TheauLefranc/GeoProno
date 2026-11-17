@@ -19,7 +19,7 @@ services:
     environment:
       DATABASE_URL: postgresql://geoprono:geoprono@db:5432/geoprono
       JWT_SECRET: local-dev-secret-local-dev-secret-0000
-      COOKIE_SECURE: "false"
+      COOKIE_SECURE: "auto"
       ALLOWED_EMAIL_DOMAINS: ""
       ADMIN_EMAILS: ""
     depends_on:
