@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T15:30:00Z",
+  "title": "Design System: GeoProno",
+  "extensions": {
+    "colorMeta": {
+      "led-gold": { "role": "primary", "displayName": "LED Gold" },
+      "court-blue": { "role": "secondary", "displayName": "Court Blue" },
+      "whistle-red": { "role": "tertiary", "displayName": "Whistle Red" },
+      "gym-wall": { "role": "neutral", "displayName": "Gym Wall" },
+      "scoreboard": { "role": "neutral", "displayName": "Scoreboard Black" }
+    },
+    "typographyMeta": {
+      "led": { "displayName": "LED numerals", "purpose": "Odds, balances, countdowns, stakes, ranks. Numbers only." },
+      "heading": { "displayName": "Condensed heading", "purpose": "Page and section titles." },
+      "label": { "displayName": "Board label", "purpose": "Uppercase strips, side names, tags, stamps." }
+    },
+    "shadows": [{ "name": "board", "value": "0 1px 2px rgb(14 17 22 / 0.08), 0 6px 16px -8px rgb(14 17 22 / 0.25)", "purpose": "Scoreboard cards and segmented selection." }],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "All state transitions (160–220ms)." },
+      { "name": "led-roll", "value": "360ms translateY(-70%)+blur(2px) -> none", "purpose": "Changed digits roll in; off under reduced motion." }
+    ],
+    "breakpoints": [{ "name": "rail", "value": "900px" }]
+  },
+  "components": [
+    {
+      "name": "Scoreboard side",
+      "kind": "custom",
+      "refersTo": "side",
+      "description": "One option of a bet: name, LED odds, stake total. Tap to open the stake form.",
+      "html": "<button class=\"ds-side\"><span class=\"n\">GÉO</span><span class=\"o\">1.75</span><span class=\"s\">150 misées</span></button>",
+      "css": ".ds-side{display:grid;gap:6px;justify-items:center;padding:12px 8px;min-width:140px;border:0;border-radius:8px;background:#191e27;color:#f2f4f8;box-shadow:inset 0 3px 0 #6b97ff;font-family:Barlow,sans-serif}.ds-side .n{font:700 14px/1 'Barlow Condensed';letter-spacing:.06em}.ds-side .o{font:900 34px/1 Doto,monospace;color:#f2b931}.ds-side .s{font-size:12px;color:#a5afbf}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one gold action per view.",
+      "html": "<button class=\"ds-btn\">Miser 100 sur Géo</button>",
+      "css": ".ds-btn{height:48px;padding:0 20px;border:0;border-radius:8px;background:#f2b931;color:#0e1116;font:700 16px Barlow,sans-serif}.ds-btn:hover{background:#ffd166}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Tableau du gymnase",
+    "overview": "Every bet is a black scoreboard with gold LED numerals on a pale blue gym-wall ground; the rest is a quiet standard mobile app.",
+    "keyCharacteristics": ["Gold LED numerals on black only", "Exact-share pool bars", "States as stamps", "Digit-roll on change"],
+    "rules": [
+      { "name": "The Board Rule", "body": "Black is reserved for scoreboards; proposals are white and dashed.", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "All numbers tabular.", "section": "typography" }
+    ],
+    "dos": ["Draw quantities to exact scale", "Isolate irreversible actions"],
+    "donts": ["Gold text on light ground", "Eyebrow labels", "Modals for betting"]
+  }
+}

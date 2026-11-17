@@ -1,0 +1,37 @@
+# Local full stack, built from source:  docker compose up --build
+# Then open http://localhost:8080
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: geoprono
+      POSTGRES_PASSWORD: geoprono
+      POSTGRES_DB: geoprono
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geoprono"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql://geoprono:geoprono@db:5432/geoprono
+      JWT_SECRET: local-dev-secret-local-dev-secret-0000
+      COOKIE_SECURE: "false"
+      ALLOWED_EMAIL_DOMAINS: ""
+      ADMIN_EMAILS: ""
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

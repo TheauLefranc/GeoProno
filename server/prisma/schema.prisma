@@ -1,0 +1,183 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum BetStatus {
+  PROPOSED // waiting for community votes
+  OPEN // accepting wagers until closesAt
+  SETTLED // result entered, payouts done
+  CANCELLED // stakes refunded
+  REJECTED // refused by a moderator before opening
+}
+
+enum WagerStatus {
+  PENDING
+  WON
+  LOST
+  REFUNDED
+}
+
+enum TxType {
+  SIGNUP_BONUS
+  DAILY_REFILL
+  BET_STAKE
+  BET_PAYOUT
+  BET_REFUND
+  ADMIN_ADJUST
+}
+
+enum GroupRole {
+  OWNER
+  MEMBER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  balance      Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  wagers       Wager[]
+  votes        BetVote[]
+  proposedBets Bet[]         @relation("BetCreator")
+  transactions Transaction[]
+  memberships  GroupMember[]
+  ownedGroups  Group[]       @relation("GroupOwner")
+}
+
+model Bet {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  category        String
+  status          BetStatus @default(PROPOSED)
+  oddsEnabled     Boolean   @default(false)
+  closesAt        DateTime
+  votesRequired   Int
+  createdAt       DateTime  @default(now())
+  openedAt        DateTime?
+  settledAt       DateTime?
+  winningOptionId String?
+
+  creatorId String
+  creator   User    @relation("BetCreator", fields: [creatorId], references: [id])
+  groupId   String?
+  group     Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  options      BetOption[]
+  votes        BetVote[]
+  wagers       Wager[]
+  transactions Transaction[]
+
+  @@index([status, closesAt])
+  @@index([groupId])
+}
+
+model BetOption {
+  id       String @id @default(cuid())
+  label    String
+  position Int
+  /// Decimal odds x100 (185 = 1.85). Null when the bet runs as a pool.
+  oddsX100 Int?
+
+  betId  String
+  bet    Bet     @relation(fields: [betId], references: [id], onDelete: Cascade)
+  wagers Wager[]
+}
+
+model BetVote {
+  betId     String
+  userId    String
+  createdAt DateTime @default(now())
+  bet       Bet      @relation(fields: [betId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([betId, userId])
+}
+
+model Wager {
+  id        String      @id @default(cuid())
+  amount    Int
+  /// Odds locked at the time the wager was placed (fixed-odds bets only).
+  oddsX100  Int?
+  payout    Int?
+  status    WagerStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  betId    String
+  bet      Bet       @relation(fields: [betId], references: [id], onDelete: Cascade)
+  optionId String
+  option   BetOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([betId])
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  type         TxType
+  amount       Int
+  balanceAfter Int
+  note         String?
+  createdAt    DateTime @default(now())
+
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  betId  String?
+  bet    Bet?    @relation(fields: [betId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model Group {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  createdAt  DateTime @default(now())
+
+  ownerId String
+  owner   User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members GroupMember[]
+  bets    Bet[]
+}
+
+model GroupMember {
+  groupId  String
+  userId   String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+}
+
+/// Single row (id = 1) holding settings editable by admins.
+model AppSettings {
+  id                 Int     @id @default(1)
+  refillThreshold    Int     @default(1000)
+  refillHour         Int     @default(7)
+  signupBonus        Int     @default(1000)
+  votesRequired      Int     @default(10)
+  oddsFeatureEnabled Boolean @default(true)
+  minStake           Int     @default(1)
+  maxStake           Int     @default(5000)
+  lastRefillDate     String?
+}
