@@ -36,7 +36,7 @@ The bets come from the students themselves: anyone proposes one, it goes live on
 
 - Mobile-first: everything must work one-handed on a phone.
 - No real money, no payment flows, ever.
-- Undecided: school name and branding (none provided yet), exact refill hour/amount (configurable, defaults 07:00 Europe/Paris, 1000).
+- Undecided: school name and branding (none provided yet), exact refill hour/amount (configurable, defaults 07:00 Europe/Paris, refill to 100). The currency is called GeoPuntos.
 
 ## Evidence on Hand
 

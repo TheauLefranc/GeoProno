@@ -13,6 +13,9 @@ export const CATEGORIES: { id: string; label: string }[] = [
 export const categoryLabel = (id: string) => CATEGORIES.find((c) => c.id === id)?.label ?? id;
 
 const nf = new Intl.NumberFormat("fr-FR");
+/** Name of the play-money currency, used everywhere in the UI. */
+export const CURRENCY = "GeoPuntos";
+
 export const coins = (n: number) => nf.format(n);
 export const signed = (n: number) => (n > 0 ? "+" : n < 0 ? "−" : "") + nf.format(Math.abs(n));
 

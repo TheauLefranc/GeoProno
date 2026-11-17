@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ChevronRight, LogOut, Shield } from "lucide-react";
 import { api, type Transaction, type WagerHistory } from "../lib/api";
-import { ago, categoryLabel, coins, odds, signed } from "../lib/format";
+import { ago, categoryLabel, coins, CURRENCY, odds, signed } from "../lib/format";
 import { usePublicConfig } from "../lib/hooks";
 import { isStaff, useSession, useSetUser } from "../lib/session";
 import { Led } from "../components/Led";
@@ -57,7 +57,7 @@ export function MePage() {
       </div>
       {cfg.data && (
         <p style={{ color: "var(--ink-2)", fontSize: 14, marginTop: 12 }}>
-          Chaque matin à {cfg.data.refillHour} h, ton solde remonte à {coins(cfg.data.refillThreshold)} pièces s'il est en dessous.
+          Chaque matin à {cfg.data.refillHour} h, ton solde remonte à {coins(cfg.data.refillThreshold)} {CURRENCY} s'il est en dessous.
         </p>
       )}
 

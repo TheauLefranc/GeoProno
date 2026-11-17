@@ -3,7 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { api, type Role, type Settings, type User } from "../lib/api";
-import { coins } from "../lib/format";
+import { coins, CURRENCY } from "../lib/format";
 import { useAction } from "../lib/hooks";
 import { isStaff, useSession } from "../lib/session";
 import { ErrorBox, Skeletons, Spinner } from "../components/States";
@@ -91,7 +91,7 @@ function SettingsForm() {
       >
         {num("refillThreshold", "Seuil de recharge", "Chaque matin, les soldes en dessous remontent à ce montant.")}
         {num("refillHour", "Heure de la recharge (0–23, heure de Paris)")}
-        {num("signupBonus", "Pièces offertes à l'inscription")}
+        {num("signupBonus", `${CURRENCY} offerts à l'inscription`)}
         {num("votesRequired", "Votes pour ouvrir un pari public", "Les paris de groupe demandent la moitié du groupe, plafonnée à ce nombre.")}
         <div className="row">
           <div className="grow">{num("minStake", "Mise min.")}</div>
@@ -162,7 +162,7 @@ function UserRow({ u }: { u: User }) {
       <div className="list-main" style={{ minWidth: 160 }}>
         <div className="list-title">{u.username}</div>
         <div className="list-sub">
-          {u.email} · {coins(u.balance)} pièces
+          {u.email} · {coins(u.balance)} {CURRENCY}
         </div>
       </div>
       <select

@@ -172,7 +172,7 @@ model GroupMember {
 /// Single row (id = 1) holding settings editable by admins.
 model AppSettings {
   id                 Int     @id @default(1)
-  refillThreshold    Int     @default(1000)
+  refillThreshold    Int     @default(100)
   refillHour         Int     @default(7)
   signupBonus        Int     @default(1000)
   votesRequired      Int     @default(10)

@@ -34,8 +34,8 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
         <Led value="GEOPRONO" />
         <p>
           {register
-            ? "Crée ton compte, reçois tes premières pièces et parie sur les matchs de l'école."
-            : "Les paris de l'école, en pièces virtuelles. Rechargées chaque matin."}
+            ? "Crée ton compte, reçois tes premiers GeoPuntos et parie sur les matchs de l'école."
+            : "Les paris de l'école, en GeoPuntos. Rechargés chaque matin."}
         </p>
       </div>
       <form

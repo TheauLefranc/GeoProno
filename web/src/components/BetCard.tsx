@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Trophy, Users } from "lucide-react";
 import { api, type Bet } from "../lib/api";
-import { categoryLabel, coins, countdown, odds, when } from "../lib/format";
+import { categoryLabel, coins, countdown, CURRENCY, odds, when } from "../lib/format";
 import { useAction, useNow } from "../lib/hooks";
 import { useSession } from "../lib/session";
 import { Led } from "./Led";
@@ -116,7 +116,7 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
                     <Trophy size={12} aria-hidden /> Gagnant
                   </span>
                 ) : (
-                  `${coins(o.total)} misées`
+                  `${coins(o.total)} misés`
                 )}
               </span>
             </button>
@@ -176,7 +176,7 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
             <Led value={coins(potential)} />
           </div>
           {wager.error && <div className="alert">{wager.error.message}</div>}
-          {stake > balance && <div className="alert">Solde insuffisant : tu as {coins(balance)} pièces.</div>}
+          {stake > balance && <div className="alert">Solde insuffisant : tu as {coins(balance)} {CURRENCY}.</div>}
           <div className="stake-actions">
             <button className="btn btn-gold btn-block" disabled={wager.isPending || stake <= 0 || stake > balance}>
               {wager.isPending ? <Spinner /> : `Miser ${coins(stake)} sur ${option.label}`}

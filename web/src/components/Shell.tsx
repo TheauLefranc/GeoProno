@@ -2,7 +2,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CircleUserRound, Medal, Ticket, UsersRound, Vote } from "lucide-react";
 import { api } from "../lib/api";
-import { coins } from "../lib/format";
+import { coins, CURRENCY } from "../lib/format";
 import { useSession } from "../lib/session";
 import { Led } from "./Led";
 
@@ -30,7 +30,7 @@ export function Shell() {
           <span className="brand-dot" aria-hidden />
           GEOPRONO
         </Link>
-        <Link to="/moi" className="balance" aria-label={`Solde : ${coins(user?.balance ?? 0)} pièces`}>
+        <Link to="/moi" className="balance" aria-label={`Solde : ${coins(user?.balance ?? 0)} ${CURRENCY}`}>
           <span className="balance-label">Solde</span>
           <Led value={coins(user?.balance ?? 0)} />
         </Link>
