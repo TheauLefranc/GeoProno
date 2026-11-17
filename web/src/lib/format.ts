@@ -1,16 +1,4 @@
-export const CATEGORIES: { id: string; label: string }[] = [
-  { id: "BABYFOOT", label: "Baby-foot" },
-  { id: "FOOT", label: "Foot" },
-  { id: "RUGBY", label: "Rugby" },
-  { id: "BASKET", label: "Basket" },
-  { id: "HAND", label: "Hand" },
-  { id: "VOLLEY", label: "Volley" },
-  { id: "PINGPONG", label: "Ping-pong" },
-  { id: "ESPORT", label: "E-sport" },
-  { id: "AUTRE", label: "Autre" },
-];
-
-export const categoryLabel = (id: string) => CATEGORIES.find((c) => c.id === id)?.label ?? id;
+export { categoryLabel, categoryPath } from "./categories";
 
 const nf = new Intl.NumberFormat("fr-FR");
 /** Name of the play-money currency, used everywhere in the UI. */
@@ -21,6 +9,22 @@ export const signed = (n: number) => (n > 0 ? "+" : n < 0 ? "−" : "") + nf.for
 
 /** 185 -> "1.85" ; dot kept on purpose: it reads like a scoreboard and is the odds convention. */
 export const odds = (x100: number | null | undefined) => (x100 ? (x100 / 100).toFixed(2) : "—");
+
+export type OddsTier = "fav" | "even" | "long";
+
+/**
+ * Reading of an odds value, Polymarket-style: implied probability (1 / odds)
+ * drives both the colour tier and the numeral size of an option.
+ *  - fav  (≥ 60 %, odds ≤ 1.66): court blue
+ *  - even (33–60 %):              LED gold
+ *  - long (< 33 %, odds > 3):     outsider orange
+ */
+export function oddsInfo(x100: number | null | undefined): { p: number; pct: number; tier: OddsTier; tierLabel: string } | null {
+  if (!x100) return null;
+  const p = Math.min(1, 100 / x100);
+  const tier: OddsTier = p >= 0.6 ? "fav" : p >= 0.33 ? "even" : "long";
+  return { p, pct: Math.round(p * 100), tier, tierLabel: tier === "fav" ? "favori" : tier === "long" ? "outsider" : "serré" };
+}
 
 export function countdown(ms: number): string {
   if (ms <= 0) return "00:00";

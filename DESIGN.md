@@ -22,6 +22,8 @@ colors:
   court-blue-soft: "#dbe5fb"
   whistle-red: "#e5483b"
   whistle-red-soft: "#fde4e1"
+  odds-fav: "#7aa5ff"
+  odds-long: "#ff8a4c"
 typography:
   led:
     fontFamily: "Doto, ui-monospace, monospace"
@@ -123,6 +125,7 @@ GeoProno is an Operate surface: students open it on their phone between classes,
 - **Gym wall** (`gym-wall`, `gym-wall-deep`): page ground and segmented/disabled fills. **Scoreboard** (`scoreboard`, `scoreboard-cell`, `scoreboard-cell-hi`): bet boards, top bar, stat strips.
 
 ### Named Rules
+- **The Odds Rule**: an option's odds are read as implied probability (1/odds). Colour names the tier: favourite ≥ 60 % in `odds-fav` blue, tight 33–60 % in LED gold, outsider < 33 % in `odds-long` orange. Numeral size grows with probability (22–52px), and each option shows its % de chances, Polymarket-style.
 - **The Board Rule**: black is reserved for scoreboards (bet cards, top bar, podium, stats, moderation panel). Proposals that are not on the board yet are white with a dashed edge.
 - **The Series Rule**: options take series colours in order (blue, gold, white, slate, …) as the 3px top edge of their cell and their share of the pool bar.
 - Dark mode lifts the ground to `#1b2230` so the boards stay blacker than the page.
@@ -157,6 +160,9 @@ Gold primary (one per view), dark secondary, ghost tertiary, red-outline destruc
 
 ### Chips
 Filter chips are white pills that turn ink when pressed (`aria-pressed`).
+
+### Category navigation
+Two levels, Polymarket-style: main categories (Sport, Jeux, Vie de l'école, Autre) as a condensed text tab bar with a blue underline, then the selected category's subcategories as chips. Boards show the path, e.g. "SPORT · BASKET".
 
 ### Cards / Containers
 - **Board** (signature): a strip (category left, "FERME DANS" + LED clock right), then the title, side cells, a gold "touch a team to bet" hint, the exact-share pool bar, the pool row and mode tags. Tapping a side opens the stake form inside the board, never a modal.

@@ -27,6 +27,10 @@
   --red: #e5483b;
   --red-soft: #fde4e1;
 
+  /* Odds tiers (on black panels): favourite / tight / outsider */
+  --odds-fav: #7aa5ff;
+  --odds-long: #ff8a4c;
+
   --series-0: #6b97ff;
   --series-1: #f2b931;
   --series-2: #e8ecf2;
@@ -328,10 +332,12 @@ textarea {
 }
 .led-dot {
   width: 0.34em;
-  align-self: flex-end;
+  height: 1em;
+  align-self: center;
   display: inline-flex;
   justify-content: center;
-  padding-bottom: 0.1em;
+  align-items: flex-end;
+  padding-bottom: 0.14em;
 }
 .led-dot > i {
   width: 0.13em;
@@ -417,6 +423,53 @@ textarea {
   border-color: var(--ink);
   color: var(--ground);
 }
+/* Main categories: a text tab bar (Polymarket-style), subcategories as chips below */
+.maintabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -16px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.maintabs::-webkit-scrollbar {
+  display: none;
+}
+.maintab {
+  position: relative;
+  flex: none;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  font: 700 17px/1 var(--font-c);
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color 160ms var(--ease);
+}
+.maintab:hover {
+  color: var(--ink);
+}
+.maintab[aria-selected="true"] {
+  color: var(--ink);
+}
+.maintab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--blue);
+}
+.chip-sub {
+  height: 32px;
+  font-size: 13px;
+}
+
 .segmented {
   display: grid;
   grid-auto-flow: column;
@@ -567,11 +620,41 @@ a.board-title:hover {
   color: #d9dee7;
   overflow-wrap: anywhere;
 }
+/* Odds read like Polymarket: the likelier the outcome, the bigger the numerals
+   (--p = implied probability, 0..1), and the colour names the tier. */
 .side .led {
-  font-size: 34px;
+  font-size: clamp(22px, calc(12px + 48px * var(--p, 0.4)), 52px);
+  min-height: 52px;
+  align-items: center;
+  transition: font-size 300ms var(--ease);
+}
+.sides.many .side .led {
+  font-size: clamp(18px, calc(8px + 44px * var(--p, 0.4)), 40px);
 }
 .side .led.muted {
   color: var(--panel-muted);
+  font-size: 30px;
+}
+.odds-fav {
+  color: var(--odds-fav);
+}
+.odds-even {
+  color: var(--gold);
+}
+.odds-long {
+  color: var(--odds-long);
+}
+.chance {
+  font-weight: 700;
+}
+.chance-fav {
+  color: var(--odds-fav);
+}
+.chance-even {
+  color: var(--gold);
+}
+.chance-long {
+  color: var(--odds-long);
 }
 .side-sub {
   font-size: 12px;

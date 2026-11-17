@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Plus, X } from "lucide-react";
 import { api, type Bet, type GroupSummary } from "../lib/api";
-import { CATEGORIES } from "../lib/format";
+import { mainOf, TAXONOMY } from "../lib/categories";
 import { useAction, usePublicConfig } from "../lib/hooks";
 import { Spinner } from "../components/States";
 import { useToast } from "../components/Toast";
@@ -89,14 +89,29 @@ export function ProposePage() {
         </label>
 
         <div className="field">
-          <span>Sport</span>
-          <div className="rail" style={{ paddingTop: 0, paddingBottom: 0 }} role="group" aria-label="Sport">
-            {CATEGORIES.map((c) => (
-              <button type="button" key={c.id} className="chip" aria-pressed={category === c.id} onClick={() => setCategory(c.id)}>
-                {c.label}
+          <span>Catégorie</span>
+          <div className="rail" style={{ paddingTop: 0, paddingBottom: 0 }} role="group" aria-label="Catégorie principale">
+            {TAXONOMY.map((m) => (
+              <button
+                type="button"
+                key={m.id}
+                className="chip"
+                aria-pressed={mainOf(category)?.id === m.id}
+                onClick={() => setCategory(m.subs[0].id)}
+              >
+                {m.label}
               </button>
             ))}
           </div>
+          {(mainOf(category)?.subs.length ?? 0) > 1 && (
+            <div className="rail" style={{ paddingTop: 4, paddingBottom: 0 }} role="group" aria-label="Sous-catégorie">
+              {mainOf(category)!.subs.map((s) => (
+                <button type="button" key={s.id} className="chip chip-sub" aria-pressed={category === s.id} onClick={() => setCategory(s.id)}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>

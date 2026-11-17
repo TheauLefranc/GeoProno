@@ -6,8 +6,8 @@ import { applyBalanceChange } from "./ledger";
 import { computePayouts, poolOdds, votesNeeded } from "./payout";
 import { getSettings } from "./settings";
 
-export const CATEGORIES = ["BABYFOOT", "FOOT", "RUGBY", "BASKET", "HAND", "VOLLEY", "PINGPONG", "ESPORT", "AUTRE"] as const;
-export type Category = (typeof CATEGORIES)[number];
+export { CATEGORIES } from "./categories";
+
 
 export const betInclude = {
   creator: { select: { id: true, username: true } },
@@ -110,7 +110,7 @@ export async function loadBet(id: string, user?: SessionUser) {
 export interface NewBetInput {
   title: string;
   description?: string;
-  category: Category;
+  category: string;
   closesAt: Date;
   options: { label: string; odds?: number }[];
   oddsEnabled: boolean;

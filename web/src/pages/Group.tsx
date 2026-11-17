@@ -22,7 +22,7 @@ export function GroupPage() {
     queryKey: ["group", id],
     queryFn: () => api<{ group: GroupDetail; leaderboard: LeaderRow[] }>(`/groups/${id}`),
   });
-  const bets = useBets(tab, undefined, id);
+  const bets = useBets(tab, {}, id);
   const leave = useAction(() => api(`/groups/${id}/members/${user!.id}`, { method: "DELETE" }), [["groups"]]);
   const regen = useAction(() => api<{ inviteCode: string }>(`/groups/${id}/code`, { method: "POST" }), [["group", id]]);
   const remove = useAction(() => api(`/groups/${id}`, { method: "DELETE" }), [["groups"]]);

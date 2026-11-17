@@ -5,6 +5,8 @@ Les paris de l'école en GeoPuntos, la monnaie virtuelle du site : matchs, baby-
 - **Comptes** avec email de l'école (domaine restreint), historique des paris et de tous les mouvements de GeoPuntos.
 - **Argent virtuel** : bonus à l'inscription ; chaque matin (7 h, heure de Paris, réglable), les soldes sous le seuil (100 GeoPuntos) remontent au seuil.
 - **Propositions** : n'importe qui propose un pari ; il ouvre quand il atteint le nombre de votes requis (10 par défaut). Les modérateurs peuvent l'ouvrir directement ou le refuser.
+- **Catégories à deux niveaux** (façon Polymarket) : Sport, Jeux, Vie de l'école, Autre, chacune avec ses sous-catégories (`server/src/services/categories.ts` et `web/src/lib/categories.ts`, à garder synchronisés).
+- **Cotes lisibles** : chaque issue affiche son % de chances ; couleur et taille des chiffres dépendent de la probabilité (favori bleu, serré doré, outsider orange).
 - **Cotes activables** : par pari, cotes fixes (gain = mise × cote, verrouillée au moment de la mise, ajustable par les modérateurs) ou cagnotte partagée entre les gagnants. Les admins peuvent couper les cotes pour tout le site.
 - **Groupes** : création, code d'invitation, défis privés (votes = moitié du groupe, résultat saisi par le créateur), classement du groupe.
 - **Classement général** au bénéfice net sur les paris publics réglés (7 j / 30 j / tout). Les recharges ne comptent pas.

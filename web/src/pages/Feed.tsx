@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { api, type Bet } from "../lib/api";
-import { CATEGORIES } from "../lib/format";
 import { BetCard } from "../components/BetCard";
+import { CategoryFilter, type CategoryValue } from "../components/CategoryFilter";
 import { Empty, ErrorBox, Skeletons } from "../components/States";
 
 type View = "open" | "awaiting" | "done";
@@ -14,12 +14,13 @@ const VIEWS: { id: View; label: string }[] = [
   { id: "done", label: "Terminés" },
 ];
 
-export function useBets(view: string, category?: string, groupId?: string) {
+export function useBets(view: string, filter: CategoryValue = {}, groupId?: string) {
   const params = new URLSearchParams({ view });
-  if (category) params.set("category", category);
+  if (filter.sub) params.set("category", filter.sub);
+  else if (filter.main) params.set("main", filter.main);
   if (groupId) params.set("groupId", groupId);
   return useQuery({
-    queryKey: ["bets", view, category ?? "", groupId ?? ""],
+    queryKey: ["bets", view, filter.main ?? "", filter.sub ?? "", groupId ?? ""],
     queryFn: () => api<{ bets: Bet[] }>(`/bets?${params}`).then((d) => d.bets),
     refetchInterval: view === "open" ? 20_000 : false,
   });
@@ -27,7 +28,7 @@ export function useBets(view: string, category?: string, groupId?: string) {
 
 export function FeedPage() {
   const [view, setView] = useState<View>("open");
-  const [category, setCategory] = useState<string | undefined>();
+  const [category, setCategory] = useState<CategoryValue>({});
   const bets = useBets(view, category);
 
   return (
@@ -38,20 +39,11 @@ export function FeedPage() {
           <Plus size={18} aria-hidden /> Proposer
         </Link>
       </div>
-      <div className="segmented" role="group" aria-label="État des paris">
+      <CategoryFilter value={category} onChange={setCategory} />
+      <div className="segmented" role="group" aria-label="État des paris" style={{ margin: "12px 0" }}>
         {VIEWS.map((v) => (
           <button key={v.id} aria-pressed={view === v.id} onClick={() => setView(v.id)}>
             {v.label}
-          </button>
-        ))}
-      </div>
-      <div className="rail" role="group" aria-label="Sport">
-        <button className="chip" aria-pressed={!category} onClick={() => setCategory(undefined)}>
-          Tout
-        </button>
-        {CATEGORIES.map((c) => (
-          <button key={c.id} className="chip" aria-pressed={category === c.id} onClick={() => setCategory(c.id)}>
-            {c.label}
           </button>
         ))}
       </div>
@@ -75,7 +67,7 @@ export function FeedPage() {
               </div>
             }
           >
-            {category ? "Rien dans ce sport pour l'instant. " : ""}Un pari ouvre dès qu'il a assez de votes : va donner un coup de pouce aux
+            {category.main ? "Rien dans cette catégorie pour l'instant. " : ""}Un pari ouvre dès qu'il a assez de votes : va donner un coup de pouce aux
             propositions.
           </Empty>
         ) : view === "awaiting" ? (

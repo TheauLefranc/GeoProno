@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Trophy, Users } from "lucide-react";
 import { api, type Bet } from "../lib/api";
-import { categoryLabel, coins, countdown, CURRENCY, odds, when } from "../lib/format";
+import { categoryPath, coins, countdown, CURRENCY, odds, oddsInfo, when } from "../lib/format";
 import { useAction, useNow } from "../lib/hooks";
 import { useSession } from "../lib/session";
 import { Led } from "./Led";
@@ -65,7 +65,7 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
     <article className="panel board" aria-label={bet.title}>
       <div className="board-strip">
         <span className="label-c">
-          {categoryLabel(bet.category)}
+          {categoryPath(bet.category)}
           {bet.group ? ` · ${bet.group.name}` : ""}
         </span>
         <div className={`clock${open && msLeft < 3600_000 ? " soon" : ""}`}>
@@ -94,12 +94,13 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
         {bet.options.map((o, i) => {
           const isWin = settled && o.id === bet.winningOptionId;
           const isLost = settled && o.id !== bet.winningOptionId;
+          const info = oddsInfo(o.odds);
           return (
             <button
               key={o.id}
               type="button"
               className={`side${isWin ? " won" : ""}${isLost ? " lost" : ""}`}
-              style={{ ["--c" as string]: seriesColor(i) }}
+              style={{ ["--c" as string]: seriesColor(i), ["--p" as string]: info?.p ?? 0 }}
               aria-pressed={selected === o.id}
               disabled={!open}
               onClick={() => setSelected(selected === o.id ? null : o.id)}
@@ -107,8 +108,8 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
               <span className={`side-name${cancelled ? " struck" : ""}`}>{o.label}</span>
               <Led
                 value={odds(o.odds)}
-                className={o.odds ? "" : "muted"}
-                label={o.odds ? `cote ${odds(o.odds)}` : "pas encore de cote"}
+                className={info ? `odds odds-${info.tier}` : "odds muted"}
+                label={info ? `cote ${odds(o.odds)}, ${info.pct} % de chances, ${info.tierLabel}` : "pas encore de cote"}
               />
               <span className="side-sub">
                 {isWin ? (
@@ -116,7 +117,11 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
                     <Trophy size={12} aria-hidden /> Gagnant
                   </span>
                 ) : (
-                  `${coins(o.total)} misés`
+                  <>
+                    {info && <strong className={`chance chance-${info.tier}`}>{info.pct} %</strong>}
+                    {info ? " · " : ""}
+                    {coins(o.total)} misés
+                  </>
                 )}
               </span>
             </button>

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { api, type Bet } from "../lib/api";
-import { categoryLabel, odds, when } from "../lib/format";
+import { categoryPath, odds, when } from "../lib/format";
 import { useAction } from "../lib/hooks";
 import { useSession } from "../lib/session";
 import { Spinner } from "./States";
@@ -30,7 +30,7 @@ export function ProposalCard({ bet }: { bet: Bet }) {
         {bet.title}
       </Link>
       <div className="meta">
-        <span>{categoryLabel(bet.category)}</span>
+        <span>{categoryPath(bet.category)}</span>
         {bet.group && <span>Groupe {bet.group.name}</span>}
         <span>Proposé par {bet.creator.username}</span>
         <span>Clôture {when(bet.closesAt)}</span>

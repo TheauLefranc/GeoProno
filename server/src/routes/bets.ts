@@ -17,6 +17,7 @@ import {
   updateOdds,
   vote,
 } from "../services/bets";
+import { MAIN_CATEGORIES, subcategoriesOf } from "../services/categories";
 
 export const betsRouter = Router();
 betsRouter.use(requireAuth);
@@ -27,10 +28,18 @@ betsRouter.get("/", async (req, res) => {
   const q = z
     .object({
       view: z.enum(VIEWS).default("open"),
+      /** Subcategory (e.g. BABYFOOT) */
       category: z.enum(CATEGORIES).optional(),
+      /** Main category (e.g. SPORT): every subcategory under it */
+      main: z.enum(MAIN_CATEGORIES).optional(),
       groupId: z.string().optional(),
     })
     .parse(req.query);
+  const categoryFilter: Prisma.BetWhereInput = q.category
+    ? { category: q.category }
+    : q.main
+      ? { category: { in: subcategoriesOf(q.main) } }
+      : {};
   const user = req.user!;
   const now = new Date();
 
@@ -51,7 +60,7 @@ betsRouter.get("/", async (req, res) => {
   };
   const v = byView[q.view];
   const bets = await prisma.bet.findMany({
-    where: { AND: [scope, v.where, q.category ? { category: q.category } : {}] },
+    where: { AND: [scope, v.where, categoryFilter] },
     orderBy: v.orderBy,
     include: betInclude,
     take: 60,

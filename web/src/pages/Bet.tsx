@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { api, type Bet } from "../lib/api";
-import { categoryLabel, coins, odds, when } from "../lib/format";
+import { categoryPath, coins, odds, when } from "../lib/format";
 import { useAction, usePublicConfig } from "../lib/hooks";
 import { useSession } from "../lib/session";
 import { BetCard } from "../components/BetCard";
@@ -54,7 +54,7 @@ function BetDetail({ bet }: { bet: Bet }) {
               {bet.description}
             </li>
           )}
-          <Info k="Sport" v={categoryLabel(bet.category)} />
+          <Info k="Catégorie" v={categoryPath(bet.category)} />
           <Info k="Mode" v={bet.oddsEnabled ? "Cotes fixes : gain = mise × cote au moment du pari" : "Cagnotte : les gagnants se partagent toutes les mises"} />
           <Info k="Fin des mises" v={when(bet.closesAt)} />
           <Info k="Proposé par" v={bet.creator.username} />
