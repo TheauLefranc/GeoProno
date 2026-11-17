@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CircleUserRound, Medal, Ticket, UsersRound, Vote } from "lucide-react";
+import { CalendarDays, CircleUserRound, Medal, Ticket, UsersRound, Vote } from "lucide-react";
 import { api } from "../lib/api";
 import { coins, CURRENCY } from "../lib/format";
 import { useSession } from "../lib/session";
@@ -14,9 +14,16 @@ export function Shell() {
     refetchInterval: 60_000,
   });
   const toVote = counts.data?.proposedToVote ?? 0;
+  const live = useQuery({
+    queryKey: ["matches-live-count"],
+    queryFn: () => api<{ liveCount: number }>("/matches?view=live"),
+    refetchInterval: 60_000,
+  });
+  const liveCount = live.data?.liveCount ?? 0;
 
   const tabs = [
     { to: "/", label: "Paris", icon: Ticket, end: true },
+    { to: "/matchs", label: "Matchs", icon: CalendarDays, live: liveCount },
     { to: "/votes", label: "Votes", icon: Vote, badge: toVote },
     { to: "/groupes", label: "Groupes", icon: UsersRound },
     { to: "/classement", label: "Classement", icon: Medal },
@@ -39,10 +46,11 @@ export function Shell() {
         <Outlet />
       </main>
       <nav className="tabbar" aria-label="Navigation principale">
-        {tabs.map(({ to, label, icon: Icon, end, badge }) => (
+        {tabs.map(({ to, label, icon: Icon, end, badge, live }) => (
           <NavLink key={to} to={to} end={end} className="tab">
             <Icon size={22} strokeWidth={2} aria-hidden />
             {label}
+            {live ? <span className="tab-live" aria-label={`${live} match(s) en direct`} /> : null}
             {badge ? (
               <span className="tab-badge" aria-label={`${badge} à voter`}>
                 {badge > 9 ? "9+" : badge}

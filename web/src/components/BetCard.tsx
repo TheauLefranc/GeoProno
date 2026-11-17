@@ -11,7 +11,8 @@ import { useToast } from "./Toast";
 
 const seriesColor = (i: number) => `var(--series-${i % 6})`;
 
-export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boolean }) {
+/** inMatch: shown on its match page, so no link back to the match and no manual settling (the final score settles it). */
+export function BetCard({ bet, linkTitle = true, inMatch = false }: { bet: Bet; linkTitle?: boolean; inMatch?: boolean }) {
   const now = useNow(1000);
   const { user } = useSession();
   const [selected, setSelected] = useState<string | null>(null);
@@ -19,7 +20,9 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
   const toast = useToast();
 
   const msLeft = new Date(bet.closesAt).getTime() - now;
-  const open = bet.status === "OPEN" && msLeft > 0;
+  const msToOpen = bet.opensAt ? new Date(bet.opensAt).getTime() - now : 0;
+  const notYetOpen = bet.status === "OPEN" && msLeft > 0 && msToOpen > 0;
+  const open = bet.status === "OPEN" && msLeft > 0 && !notYetOpen;
   const awaiting = bet.status === "OPEN" && msLeft <= 0;
   const settled = bet.status === "SETTLED";
   const cancelled = bet.status === "CANCELLED";
@@ -69,6 +72,12 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
           {bet.group ? ` · ${bet.group.name}` : ""}
         </span>
         <div className={`clock${open && msLeft < 3600_000 ? " soon" : ""}`}>
+          {notYetOpen && (
+            <>
+              <span className="label-c">Paris dans</span>
+              <Led value={countdown(msToOpen)} />
+            </>
+          )}
           {open && (
             <>
               <span className="label-c">Ferme dans</span>
@@ -202,7 +211,12 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
           )}
           <span className="tag">{bet.oddsEnabled ? "Cote fixe" : "Cagnotte"}</span>
         </div>
-        {!open && !settled && !cancelled && (
+        {bet.matchId && !inMatch && (
+          <Link to={`/matchs/${bet.matchId}`} className="label-c" style={{ color: "var(--blue-hi)" }}>
+            Voir le match
+          </Link>
+        )}
+        {!open && !notYetOpen && !settled && !cancelled && (
           <span className="label-c">
             <Lock size={11} aria-hidden /> {when(bet.closesAt)}
           </span>
@@ -228,7 +242,7 @@ export function BetCard({ bet, linkTitle = true }: { bet: Bet; linkTitle?: boole
           {cancelled && <span>Remboursée</span>}
         </div>
       )}
-      {awaiting && bet.canModerate && (
+      {awaiting && bet.canModerate && !bet.matchId && (
         <Link to={`/paris/${bet.id}`} className="btn btn-ghost btn-sm">
           Saisir le résultat
         </Link>

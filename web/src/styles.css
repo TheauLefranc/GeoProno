@@ -194,7 +194,7 @@ textarea {
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
 }
 .tab {
   position: relative;
@@ -204,7 +204,7 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  font: 600 12px/1 var(--font);
+  font: 600 11px/1 var(--font);
   color: var(--ink-3);
   text-decoration: none;
   transition: color 160ms var(--ease);
@@ -1383,4 +1383,217 @@ a.list-item:hover {
 
 .divider-gap {
   height: 8px;
+}
+
+/* ───────── Matches: schedule, live, results ───────── */
+.tab-live {
+  position: absolute;
+  top: 10px;
+  left: calc(50% + 8px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 2px var(--surface);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@media (min-width: 900px) {
+  .tab-live {
+    position: static;
+    margin-left: auto;
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-live,
+  .live-dot::before {
+    animation: none;
+  }
+}
+.live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 12px/1 var(--font-c);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.live-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.day {
+  margin-top: 20px;
+}
+.day:first-of-type {
+  margin-top: 4px;
+}
+.day-head {
+  font: 700 15px/1.2 var(--font-c);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+}
+.match {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 14px;
+  text-decoration: none;
+  color: var(--panel-text);
+  transition: background 160ms var(--ease);
+}
+.match:hover {
+  background: var(--panel-2);
+}
+.match-time {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.match-time .led {
+  font-size: 18px;
+}
+.match-teams {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.match-team {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.match-team .led {
+  font-size: 22px;
+}
+.match-team .led.score-dim {
+  color: var(--panel-muted);
+}
+.match.is-live .match-team .led.score-dim {
+  color: var(--gold);
+}
+.match-name {
+  font-weight: 700;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.match-team.dim .match-name {
+  color: var(--panel-muted);
+  font-weight: 600;
+}
+.match-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--panel-muted);
+}
+.match-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.bet-state.on {
+  color: var(--gold);
+  font-weight: 700;
+}
+.match-chev {
+  color: var(--panel-muted);
+}
+
+/* Big scoreboard on the match page */
+.scoreboard .sb-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  row-gap: 6px;
+  padding: 8px 0 4px;
+}
+.sb-name {
+  font: 700 16px/1.15 var(--font-c);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #d9dee7;
+  overflow-wrap: anywhere;
+}
+.sb-score {
+  font-size: clamp(56px, 18vw, 88px);
+}
+.sb-colon {
+  display: grid;
+  gap: 14px;
+}
+.sb-colon i {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: var(--gold);
+}
+.sb-note {
+  text-align: center;
+  font: 700 14px/1 var(--font-c);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+
+/* Live score steppers (staff) */
+.stepper-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.stepper {
+  background: var(--panel-2);
+  border-radius: var(--radius-s);
+  padding: 12px 8px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+.step-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-line);
+  background: var(--panel-3);
+  color: var(--panel-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.step-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+.step-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.step-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.step-val {
+  font-size: 34px;
+  min-width: 1.3em;
+  justify-content: center;
 }

@@ -40,6 +40,9 @@ export interface Bet {
   createdAt: string;
   settledAt: string | null;
   acceptingWagers: boolean;
+  /** Match bets: wagers refused before this date */
+  opensAt: string | null;
+  matchId: string | null;
   votesRequired: number;
   voteCount: number;
   myVote: boolean;
@@ -50,6 +53,31 @@ export interface Bet {
   pool: number;
   options: BetOption[];
   myWagers: MyWager[];
+}
+
+export type MatchStatus = "SCHEDULED" | "LIVE" | "FINISHED" | "CANCELLED";
+
+export interface Match {
+  id: string;
+  category: string;
+  homeName: string;
+  awayName: string;
+  location: string | null;
+  startsAt: string;
+  status: MatchStatus;
+  homeScore: number;
+  awayScore: number;
+  liveNote: string | null;
+  updatedAt: string;
+  bet: {
+    id: string;
+    status: BetStatus;
+    opensAt: string | null;
+    closesAt: string;
+    oddsEnabled: boolean;
+    acceptingWagers: boolean;
+    options: { id: string; label: string; odds: number | null }[];
+  } | null;
 }
 
 export interface LeaderRow {
@@ -107,6 +135,7 @@ export interface Settings {
   oddsFeatureEnabled: boolean;
   minStake: number;
   maxStake: number;
+  betOpenDays: number;
   lastRefillDate: string | null;
 }
 

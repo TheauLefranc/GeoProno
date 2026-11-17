@@ -23,6 +23,7 @@ adminRouter.patch("/settings", requireRole("ADMIN"), async (req, res) => {
       oddsFeatureEnabled: z.boolean(),
       minStake: z.number().int().min(1),
       maxStake: z.number().int().min(1),
+      betOpenDays: z.number().int().min(0).max(60),
     })
     .partial()
     .parse(req.body);

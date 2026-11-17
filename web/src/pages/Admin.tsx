@@ -92,6 +92,7 @@ function SettingsForm() {
         {num("refillThreshold", "Seuil de recharge", "Chaque matin, les soldes en dessous remontent à ce montant.")}
         {num("refillHour", "Heure de la recharge (0–23, heure de Paris)")}
         {num("signupBonus", `${CURRENCY} offerts à l'inscription`)}
+        {num("betOpenDays", "Ouverture des paris sur les matchs (jours avant)", "Les paris d'un match ajouté au programme ouvrent ce nombre de jours avant le coup d'envoi.")}
         {num("votesRequired", "Votes pour ouvrir un pari public", "Les paris de groupe demandent la moitié du groupe, plafonnée à ce nombre.")}
         <div className="row">
           <div className="grow">{num("minStake", "Mise min.")}</div>

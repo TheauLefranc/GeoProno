@@ -58,6 +58,7 @@ model User {
   transactions Transaction[]
   memberships  GroupMember[]
   ownedGroups  Group[]       @relation("GroupOwner")
+  matches      Match[]       @relation("MatchCreator")
 }
 
 model Bet {
@@ -73,6 +74,8 @@ model Bet {
   openedAt        DateTime?
   settledAt       DateTime?
   winningOptionId String?
+  /// Wagers are refused before this date (match bets open N days before kick-off).
+  opensAt         DateTime?
 
   creatorId String
   creator   User    @relation("BetCreator", fields: [creatorId], references: [id])
@@ -83,9 +86,47 @@ model Bet {
   votes        BetVote[]
   wagers       Wager[]
   transactions Transaction[]
+  match        Match?
 
   @@index([status, closesAt])
   @@index([groupId])
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  CANCELLED
+}
+
+/// A fixture entered in advance by staff: shown in the schedule, scored live,
+/// and (optionally) carrying the bet that opens N days before kick-off.
+model Match {
+  id        String      @id @default(cuid())
+  category  String
+  homeName  String
+  awayName  String
+  location  String?
+  startsAt  DateTime
+  status    MatchStatus @default(SCHEDULED)
+  homeScore Int         @default(0)
+  awayScore Int         @default(0)
+  /// Free live detail: "2e mi-temps", "Set 3", "Prolongations"…
+  liveNote  String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  createdById String
+  createdBy   User   @relation("MatchCreator", fields: [createdById], references: [id])
+
+  betId        String? @unique
+  bet          Bet?    @relation(fields: [betId], references: [id], onDelete: SetNull)
+  homeOptionId String?
+  drawOptionId String?
+  awayOptionId String?
+
+  @@index([startsAt])
+  @@index([status])
 }
 
 model BetOption {
@@ -179,5 +220,7 @@ model AppSettings {
   oddsFeatureEnabled Boolean @default(true)
   minStake           Int     @default(1)
   maxStake           Int     @default(5000)
+  /// Match bets open this many days before kick-off.
+  betOpenDays        Int     @default(5)
   lastRefillDate     String?
 }

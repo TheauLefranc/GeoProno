@@ -161,6 +161,9 @@ Gold primary (one per view), dark secondary, ghost tertiary, red-outline destruc
 ### Chips
 Filter chips are white pills that turn ink when pressed (`aria-pressed`).
 
+### Match rows and scoreboard
+The schedule is a list of compact black boards grouped by day (condensed uppercase day heads): kick-off time in LED on the left, both teams stacked with LED scores on the right, a meta line (category path, place, bet state). Live matches are marked by the pulsing red « Direct » dot and gold live scores (no coloured side stripe); finished matches dim the loser. The match page shows a large two-sided LED scoreboard with a drawn LED colon. Staff score live with round +/− steppers that send each tap immediately.
+
 ### Category navigation
 Two levels, Polymarket-style: main categories (Sport, Jeux, Vie de l'école, Autre) as a condensed text tab bar with a blue underline, then the selected category's subcategories as chips. Boards show the path, e.g. "SPORT · BASKET".
 

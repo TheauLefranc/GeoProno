@@ -14,6 +14,7 @@ export const betInclude = {
   group: { select: { id: true, name: true, ownerId: true } },
   options: { orderBy: { position: "asc" } },
   _count: { select: { votes: true } },
+  match: { select: { id: true } },
 } satisfies Prisma.BetInclude;
 
 type BetRow = Prisma.BetGetPayload<{ include: typeof betInclude }>;
@@ -77,7 +78,9 @@ export async function serializeBets(bets: BetRow[], user?: SessionUser) {
       closesAt: b.closesAt,
       createdAt: b.createdAt,
       settledAt: b.settledAt,
-      acceptingWagers: b.status === "OPEN" && b.closesAt.getTime() > now,
+      opensAt: b.opensAt,
+      acceptingWagers: b.status === "OPEN" && b.closesAt.getTime() > now && (!b.opensAt || b.opensAt.getTime() <= now),
+      matchId: b.match?.id ?? null,
       votesRequired: b.votesRequired,
       voteCount: b._count.votes,
       myVote: voted.has(b.id),
@@ -186,6 +189,7 @@ export async function placeWager(user: SessionUser, betId: string, optionId: str
   const bet = await loadBet(betId, user);
   if (bet.status !== "OPEN") throw conflict("Ce pari n'est pas ouvert.");
   if (bet.closesAt.getTime() <= Date.now()) throw conflict("Les mises sont fermées pour ce pari.");
+  if (bet.opensAt && bet.opensAt.getTime() > Date.now()) throw conflict("Les paris sur ce match ne sont pas encore ouverts.");
   const option = bet.options.find((o) => o.id === optionId);
   if (!option) throw badRequest("Option inconnue.");
   if (bet.oddsEnabled && !option.oddsX100) throw conflict("Cette option n'a pas encore de cote.");

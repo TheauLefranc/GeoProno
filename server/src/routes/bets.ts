@@ -53,7 +53,11 @@ betsRouter.get("/", async (req, res) => {
   }
 
   const byView: Record<(typeof VIEWS)[number], { where: Prisma.BetWhereInput; orderBy: Prisma.BetOrderByWithRelationInput }> = {
-    open: { where: { status: "OPEN", closesAt: { gt: now } }, orderBy: { closesAt: "asc" } },
+    // Match bets scheduled to open later stay off the feed until opensAt.
+    open: {
+      where: { status: "OPEN", closesAt: { gt: now }, OR: [{ opensAt: null }, { opensAt: { lte: now } }] },
+      orderBy: { closesAt: "asc" },
+    },
     proposed: { where: { status: "PROPOSED", closesAt: { gt: now } }, orderBy: { createdAt: "desc" } },
     awaiting: { where: { status: "OPEN", closesAt: { lte: now } }, orderBy: { closesAt: "asc" } },
     done: { where: { status: { in: ["SETTLED", "CANCELLED"] } }, orderBy: { settledAt: "desc" } },

@@ -10,6 +10,7 @@ export interface PublicConfig {
   refillHour: number;
   minStake: number;
   maxStake: number;
+  betOpenDays: number;
 }
 
 export function usePublicConfig() {

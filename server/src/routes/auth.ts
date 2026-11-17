@@ -42,6 +42,7 @@ authRouter.get("/config", async (_req, res) => {
     refillHour: s.refillHour,
     minStake: s.minStake,
     maxStake: s.maxStake,
+    betOpenDays: s.betOpenDays,
   });
 });
 
