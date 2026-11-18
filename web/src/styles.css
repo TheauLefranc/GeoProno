@@ -1597,3 +1597,19 @@ a.list-item:hover {
   min-width: 1.3em;
   justify-content: center;
 }
+
+/* Admin: one-time password reset link */
+.reset-link {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-s);
+  background: var(--blue-soft);
+  font-size: 14px;
+}
+.reset-link .input {
+  height: 40px;
+  font-size: 13px;
+  font-family: ui-monospace, monospace;
+}

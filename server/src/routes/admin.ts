@@ -6,6 +6,7 @@ import { param, requireRole } from "../lib/auth";
 import { applyBalanceChange } from "../services/ledger";
 import { getSettings } from "../services/settings";
 import { runDailyRefill } from "../services/refill";
+import { createResetLink } from "../services/passwordReset";
 
 export const adminRouter = Router();
 
@@ -69,4 +70,9 @@ adminRouter.patch("/users/:id", requireRole("ADMIN"), async (req, res) => {
     select: { id: true, email: true, username: true, role: true, balance: true, createdAt: true },
   });
   res.json({ user });
+});
+
+/** One-time password reset link for a user who forgot their password (no email needed). */
+adminRouter.post("/users/:id/reset-link", requireRole("ADMIN"), async (req, res) => {
+  res.status(201).json(await createResetLink(param(req, "id"), req.user!.id));
 });

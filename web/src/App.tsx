@@ -15,6 +15,7 @@ import { AdminPage } from "./pages/Admin";
 import { MatchesPage } from "./pages/Matches";
 import { MatchPage } from "./pages/Match";
 import { MatchNewPage } from "./pages/MatchNew";
+import { ResetPasswordPage } from "./pages/ResetPassword";
 
 export function App() {
   const { user, loading } = useSession();
@@ -32,6 +33,7 @@ export function App() {
       <Routes>
         <Route path="/connexion" element={<AuthPage mode="login" />} />
         <Route path="/inscription" element={<AuthPage mode="register" />} />
+        <Route path="/reinitialisation/:token" element={<ResetPasswordPage />} />
         <Route path="*" element={<Navigate to="/connexion" replace />} />
       </Routes>
     );
@@ -39,6 +41,8 @@ export function App() {
 
   return (
     <Routes>
+      {/* Also reachable when already signed in (e.g. an admin testing a link). */}
+      <Route path="/reinitialisation/:token" element={<ResetPasswordPage />} />
       <Route element={<Shell />}>
         <Route index element={<FeedPage />} />
         <Route path="matchs" element={<MatchesPage />} />

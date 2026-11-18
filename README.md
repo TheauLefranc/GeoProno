@@ -11,6 +11,7 @@ Les paris de l'école en GeoPuntos, la monnaie virtuelle du site : matchs, baby-
 - **Cotes activables** : par pari, cotes fixes (gain = mise × cote, verrouillée au moment de la mise, ajustable par les modérateurs) ou cagnotte partagée entre les gagnants. Les admins peuvent couper les cotes pour tout le site.
 - **Groupes** : création, code d'invitation, défis privés (votes = moitié du groupe, résultat saisi par le créateur), classement du groupe.
 - **Classement général** au bénéfice net sur les paris publics réglés (7 j / 30 j / tout). Les recharges ne comptent pas.
+- **Mot de passe oublié** (sans email) : un admin génère dans Admin → Comptes un lien de réinitialisation à usage unique, valable 1 h, et l'envoie à l'élève. Changer son mot de passe déconnecte les autres appareils.
 - **Admin** : règles du jeu, rôles, ajustement de solde, recharge manuelle.
 
 ## Stack

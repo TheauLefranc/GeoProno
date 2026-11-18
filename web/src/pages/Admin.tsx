@@ -191,6 +191,59 @@ function UserRow({ u }: { u: User }) {
         </button>
       </form>
       {update.error && <div className="alert" style={{ width: "100%" }}>{update.error.message}</div>}
+      <ResetLink u={u} />
     </li>
+  );
+}
+
+const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+/** Forgot-password flow without email: the admin generates a one-time link and sends it to the user. */
+function ResetLink({ u }: { u: User }) {
+  const toast = useToast();
+  const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
+  const gen = useAction(() => api<{ path: string; expiresAt: string }>(`/admin/users/${u.id}/reset-link`, { method: "POST" }));
+
+  const copy = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Lien copié");
+    } catch {
+      toast("Sélectionne le lien pour le copier");
+    }
+  };
+
+  if (!link)
+    return (
+      <div style={{ width: "100%" }}>
+        <button
+          className="link-btn"
+          style={{ fontSize: 14, color: "var(--ink-2)" }}
+          disabled={gen.isPending}
+          onClick={() => {
+            if (!confirm(`Créer un lien de réinitialisation du mot de passe pour ${u.username} ?`)) return;
+            gen.mutate(undefined, {
+              onSuccess: (d) => setLink({ url: `${window.location.origin}${d.path}`, expiresAt: d.expiresAt }),
+            });
+          }}
+        >
+          {gen.isPending ? "Création…" : "Mot de passe oublié : créer un lien de réinitialisation"}
+        </button>
+        {gen.error && <div className="alert">{gen.error.message}</div>}
+      </div>
+    );
+
+  return (
+    <div className="reset-link">
+      <p>
+        Envoie ce lien à <strong>{u.username}</strong> (en privé). Il ne marche qu'une fois, jusqu'à {timeFmt.format(new Date(link.expiresAt))}.
+      </p>
+      <div className="row">
+        <input className="input grow" readOnly value={link.url} onFocus={(e) => e.target.select()} aria-label="Lien de réinitialisation" />
+        <button className="btn btn-dark btn-sm" onClick={() => copy(link.url)}>
+          Copier
+        </button>
+      </div>
+    </div>
   );
 }

@@ -22,8 +22,12 @@ declare global {
   }
 }
 
-export function setSession(req: Request, res: Response, userId: string) {
-  const token = jwt.sign({ sub: userId }, config.jwtSecret, { expiresIn: "30d" });
+/**
+ * `version` is the user's sessionVersion: bumping it in the database (password
+ * reset or change) invalidates every session signed with the previous value.
+ */
+export function setSession(req: Request, res: Response, userId: string, version: number) {
+  const token = jwt.sign({ sub: userId, v: version }, config.jwtSecret, { expiresIn: "30d" });
   res.cookie(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -42,9 +46,10 @@ export async function loadUser(req: Request, _res: Response, next: NextFunction)
   const token = req.cookies?.[COOKIE];
   if (!token) return next();
   try {
-    const payload = jwt.verify(token, config.jwtSecret) as { sub: string };
-    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true } });
-    if (user) req.user = user;
+    const payload = jwt.verify(token, config.jwtSecret) as { sub: string; v?: number };
+    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true, sessionVersion: true } });
+    // Tokens issued before versioning carry no `v`: treat them as version 0.
+    if (user && (payload.v ?? 0) === user.sessionVersion) req.user = { id: user.id, role: user.role };
   } catch {
     // invalid or expired token: treated as signed out
   }

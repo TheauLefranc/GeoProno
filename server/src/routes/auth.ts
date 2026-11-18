@@ -5,7 +5,8 @@ import { z } from "zod";
 import { prisma } from "../lib/db";
 import { config } from "../lib/config";
 import { badRequest, conflict, HttpError } from "../lib/http";
-import { clearSession, requireAuth, setSession } from "../lib/auth";
+import { clearSession, param, requireAuth, setSession } from "../lib/auth";
+import { checkResetLink, useResetLink } from "../services/passwordReset";
 import { applyBalanceChange } from "../services/ledger";
 import { getSettings } from "../services/settings";
 
@@ -68,7 +69,7 @@ authRouter.post("/register", limiter, async (req, res) => {
     await applyBalanceChange(tx, { userId: u.id, amount: settings.signupBonus, type: "SIGNUP_BONUS", note: "Bienvenue sur GeoProno" });
     return u;
   });
-  setSession(req, res, user.id);
+  setSession(req, res, user.id, user.sessionVersion);
   res.status(201).json({ user: await publicUser(user.id) });
 });
 
@@ -78,7 +79,7 @@ authRouter.post("/login", limiter, async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     throw new HttpError(401, "Email ou mot de passe incorrect.");
   }
-  setSession(req, res, user.id);
+  setSession(req, res, user.id, user.sessionVersion);
   res.json({ user: await publicUser(user.id) });
 });
 
@@ -95,6 +96,28 @@ authRouter.post("/password", requireAuth, limiter, async (req, res) => {
   const { current, next } = z.object({ current: z.string(), next: z.string().min(8, "8 caractères minimum").max(200) }).parse(req.body);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.id } });
   if (!(await bcrypt.compare(current, user.passwordHash))) throw badRequest("Mot de passe actuel incorrect.");
-  await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(next, 12) } });
+  // Logs out every other device, keeps this one signed in.
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(next, 12), sessionVersion: { increment: 1 } },
+  });
+  setSession(req, res, updated.id, updated.sessionVersion);
   res.status(204).end();
+});
+
+const resetToken = z.string().min(20).max(100);
+
+/** Public: is this reset link still valid? Shows whose account it is. */
+authRouter.get("/reset/:token", limiter, async (req, res) => {
+  res.json(await checkResetLink(resetToken.parse(param(req, "token"))));
+});
+
+/** Public: choose a new password from an admin-generated link, then sign in. */
+authRouter.post("/reset", limiter, async (req, res) => {
+  const { token, password } = z
+    .object({ token: resetToken, password: z.string().min(8, "8 caractères minimum").max(200) })
+    .parse(req.body);
+  const user = await useResetLink(token, password);
+  setSession(req, res, user.id, user.sessionVersion);
+  res.json({ user: await publicUser(user.id) });
 });
