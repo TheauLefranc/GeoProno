@@ -56,7 +56,7 @@ adminRouter.patch("/users/:id", requireRole("ADMIN"), async (req, res) => {
   const { role, adjust, note } = z
     .object({
       role: z.enum(["USER", "MODERATOR", "ADMIN"]).optional(),
-      adjust: z.number().int().optional(),
+      adjust: z.number().int().min(-1_000_000).max(1_000_000).optional(),
       note: z.string().trim().max(120).optional(),
     })
     .parse(req.body);

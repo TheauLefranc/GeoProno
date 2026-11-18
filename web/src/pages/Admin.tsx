@@ -23,11 +23,46 @@ export function AdminPage() {
       <div className="page-head">
         <h1>Administration</h1>
       </div>
+      <OddsToApprove />
       <Awaiting />
       {admin && <SettingsForm />}
       {admin && <Users />}
       {!admin && <p style={{ color: "var(--ink-2)" }}>Les réglages et les comptes sont réservés aux admins.</p>}
     </div>
+  );
+}
+
+/** Public proposals with fixed odds: votes alone never open them, a moderator checks the odds first. */
+function OddsToApprove() {
+  const bets = useBets("proposed");
+  const pending = (bets.data ?? []).filter((b) => b.oddsEnabled && !b.group);
+  if (bets.isLoading || pending.length === 0) return null;
+  const ready = pending.filter((b) => b.voteCount >= b.votesRequired);
+  return (
+    <section className="section">
+      <h2>Cotes à valider</h2>
+      <p style={{ color: "var(--ink-2)", fontSize: 14, marginBottom: 12 }}>
+        Paris publics à cotes fixes proposés par des joueurs. Vérifie que les cotes sont raisonnables avant d'ouvrir.
+        {ready.length > 0 && ` ${ready.length} ont déjà assez de votes.`}
+      </p>
+      <ul className="list">
+        {pending.map((b) => (
+          <li key={b.id}>
+            <Link to={`/paris/${b.id}`} className="list-item">
+              <div className="list-main">
+                <div className="list-title">{b.title}</div>
+                <div className="list-sub">
+                  {b.options.map((o) => `${o.label} ${o.odds ? (o.odds / 100).toFixed(2) : "?"}`).join(" · ")} — par {b.creator.username}
+                </div>
+              </div>
+              <span className={`pill ${b.voteCount >= b.votesRequired ? "won" : "pending"}`}>
+                {b.voteCount}/{b.votesRequired}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

@@ -23,6 +23,8 @@ export function ProposalCard({ bet }: { bet: Bet }) {
   const { user } = useSession();
   const isMine = bet.creator.id === user?.id;
   const missing = Math.max(0, bet.votesRequired - bet.voteCount);
+  /** Public fixed-odds proposals open only after a moderator approves the odds (anti odds-abuse). */
+  const needsOddsApproval = bet.oddsEnabled && !bet.group;
 
   return (
     <article className="proposal" aria-label={bet.title}>
@@ -50,9 +52,16 @@ export function ProposalCard({ bet }: { bet: Bet }) {
             {bet.voteCount}/{bet.votesRequired} votes
           </strong>
           <span style={{ color: "var(--ink-2)" }}>
-            {missing === 0 ? "Validé" : missing === 1 ? "Plus qu'un vote" : `Encore ${missing} votes`}
+            {missing === 0 ? (needsOddsApproval ? "Votes atteints" : "Validé") : missing === 1 ? "Plus qu'un vote" : `Encore ${missing} votes`}
           </span>
         </div>
+        {needsOddsApproval && (
+          <span style={{ fontSize: 13, color: "var(--ink-2)" }}>
+            {missing === 0
+              ? "En attente : un modérateur doit valider les cotes avant l'ouverture."
+              : "Cotes fixes : un modérateur les validera avant l'ouverture."}
+          </span>
+        )}
       </div>
       {toggle.error && <div className="alert">{toggle.error.message}</div>}
       {isMine ? (

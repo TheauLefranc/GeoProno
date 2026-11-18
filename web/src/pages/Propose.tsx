@@ -42,10 +42,10 @@ export function ProposePage() {
         category,
         closesAt: new Date(closesAt).toISOString(),
         groupId: groupId || undefined,
-        oddsEnabled,
+        oddsEnabled: oddsEnabled && !groupId,
         options: options.map((o) => ({
           label: o.label,
-          odds: oddsEnabled && o.odds ? Number(o.odds.replace(",", ".")) : undefined,
+          odds: oddsEnabled && !groupId && o.odds ? Number(o.odds.replace(",", ".")) : undefined,
         })),
       },
     }),
@@ -128,7 +128,7 @@ export function ProposePage() {
                   placeholder={i === 0 ? "Équipe A" : i === 1 ? "Équipe B" : `Option ${i + 1}`}
                   aria-label={`Option ${i + 1}`}
                 />
-                {oddsEnabled && (
+                {oddsEnabled && !groupId && (
                   <input
                     className="input"
                     style={{ width: 88 }}
@@ -169,14 +169,21 @@ export function ProposePage() {
           <span>
             Cotes fixes
             <small>
-              {oddsAllowed
-                ? oddsEnabled
-                  ? "Le gain = mise × cote. Les modérateurs peuvent ajuster les cotes."
-                  : "Désactivé : la cagnotte est partagée entre les gagnants."
-                : "Les cotes sont désactivées par les admins : cagnotte partagée."}
+              {groupId
+                ? "Les défis de groupe fonctionnent toujours en cagnotte partagée entre les gagnants."
+                : oddsAllowed
+                  ? oddsEnabled
+                    ? "Le gain = mise × cote. Même avec assez de votes, le pari n'ouvrira qu'une fois tes cotes validées par un modérateur."
+                    : "Désactivé : la cagnotte est partagée entre les gagnants."
+                  : "Les cotes sont désactivées par les admins : cagnotte partagée."}
             </small>
           </span>
-          <input type="checkbox" checked={oddsEnabled} disabled={!oddsAllowed} onChange={(e) => setOddsEnabled(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={oddsEnabled && !groupId}
+            disabled={!oddsAllowed || !!groupId}
+            onChange={(e) => setOddsEnabled(e.target.checked)}
+          />
         </label>
 
         <label className="field">

@@ -2,6 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { prisma } from "./lib/db";
+import { config } from "./lib/config";
 import { errorHandler } from "./lib/http";
 import { loadUser } from "./lib/auth";
 import { authRouter } from "./routes/auth";
@@ -14,7 +15,12 @@ import { matchesRouter } from "./routes/matches";
 
 export function createApp() {
   const app = express();
-  app.set("trust proxy", 1);
+  // Behind Nginx Proxy Manager + the web container nginx there are TWO proxies.
+  // Trusting a fixed hop count of 1 made every visitor appear with the proxy IP,
+  // so one person could exhaust the login rate limit for the whole school.
+  // Trust private/loopback hops only: req.ip becomes the first public address,
+  // and a client cannot spoof it (nginx appends the real peer address).
+  app.set("trust proxy", config.trustProxy);
   app.use(helmet());
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser());

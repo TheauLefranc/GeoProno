@@ -168,7 +168,7 @@ function Moderation({ bet }: { bet: Bet }) {
       {bet.status === "PROPOSED" && (
         <div className="row">
           <button className="btn btn-gold grow" disabled={approve.isPending} onClick={() => approve.mutate(undefined, { onSuccess: () => toast("Pari ouvert") })}>
-            Ouvrir sans attendre les votes
+            {bet.oddsEnabled && !bet.group ? "Valider les cotes et ouvrir" : "Ouvrir sans attendre les votes"}
           </button>
           <button className="btn btn-ghost" disabled={reject.isPending} onClick={() => reject.mutate(undefined, { onSuccess: () => toast("Proposition refusée") })}>
             Refuser
@@ -176,6 +176,15 @@ function Moderation({ bet }: { bet: Bet }) {
         </div>
       )}
 
+      {bet.oddsEnabled && !bet.group && bet.status === "PROPOSED" && (
+        <p style={{ color: "var(--panel-muted)", fontSize: 14 }}>
+          Cotes proposées par {bet.creator.username} : vérifie-les avant d'ouvrir. Les votes seuls n'ouvrent pas un pari à cotes fixes.
+        </p>
+      )}
+
+      {bet.group ? (
+        <p style={{ color: "var(--panel-muted)", fontSize: 14 }}>Défi de groupe : cagnotte partagée entre les gagnants, pas de cotes fixes.</p>
+      ) : (
       <div className="stack" style={{ gap: 8 }}>
         <span className="label-c">Cotes</span>
         {cfg.data?.oddsFeatureEnabled !== false && (
@@ -208,6 +217,7 @@ function Moderation({ bet }: { bet: Bet }) {
           Enregistrer les cotes
         </button>
       </div>
+      )}
 
       {bet.status === "OPEN" && (
         <div className="stack" style={{ gap: 8, borderTop: "1px dashed var(--panel-line)", paddingTop: 16 }}>

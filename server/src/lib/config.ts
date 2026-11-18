@@ -15,6 +15,8 @@ export const config = {
   allowedEmailDomains: list(process.env.ALLOWED_EMAIL_DOMAINS),
   /** Emails promoted to ADMIN when they sign up. */
   adminEmails: list(process.env.ADMIN_EMAILS),
+  /** Express "trust proxy" value. Default: private, loopback and link-local addresses. */
+  trustProxy: process.env.TRUST_PROXY || "loopback, linklocal, uniquelocal",
   timezone: process.env.TZ_REFILL ?? "Europe/Paris",
   /**
    * "auto" (default): Secure cookie only when the request arrived over HTTPS

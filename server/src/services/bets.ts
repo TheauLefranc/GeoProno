@@ -27,6 +27,9 @@ export async function assertCanSee(bet: { groupId: string | null }, user?: Sessi
   if (!m) throw notFound("Pari introuvable");
 }
 
+/** Public bets with proposer-chosen fixed odds open only once a moderator approves the odds. */
+export const needsOddsApproval = (bet: { oddsEnabled: boolean; groupId: string | null }) => bet.oddsEnabled && !bet.groupId;
+
 /** Moderators handle global bets; the group owner handles the group's bets. */
 export function canModerate(bet: { group: { ownerId: string } | null }, user?: SessionUser) {
   if (!user) return false;
@@ -123,6 +126,9 @@ export interface NewBetInput {
 export async function proposeBet(user: SessionUser, input: NewBetInput) {
   const settings = await getSettings();
   if (input.closesAt.getTime() < Date.now() + 5 * 60_000) throw badRequest("La clôture doit être au moins 5 minutes dans le futur.");
+  // Security: fixed odds in a group let the owner set ×100 odds, bet and settle
+  // in their own favour, printing coins. A pool only redistributes stakes.
+  if (input.groupId && input.oddsEnabled) throw badRequest("Les paris de groupe fonctionnent en cagnotte : pas de cotes fixes.");
   if (input.oddsEnabled && !settings.oddsFeatureEnabled) throw badRequest("Les cotes sont désactivées par les admins.");
   if (input.oddsEnabled && input.options.some((o) => !o.odds)) throw badRequest("Donne une cote à chaque option.");
   const labels = new Set(input.options.map((o) => o.label.trim().toLowerCase()));
@@ -135,7 +141,8 @@ export async function proposeBet(user: SessionUser, input: NewBetInput) {
     memberCount = await prisma.groupMember.count({ where: { groupId: input.groupId } });
   }
   const required = votesNeeded(settings.votesRequired, memberCount);
-  const opensNow = required <= 1;
+  // Proposer-chosen fixed odds never open on votes alone: a moderator must approve them.
+  const opensNow = required <= 1 && !needsOddsApproval({ oddsEnabled: input.oddsEnabled, groupId: input.groupId ?? null });
 
   const bet = await prisma.bet.create({
     data: {
@@ -173,7 +180,8 @@ export async function vote(user: SessionUser, betId: string, on: boolean) {
       create: { betId, userId: user.id },
     });
     const count = await prisma.betVote.count({ where: { betId } });
-    if (count >= bet.votesRequired) {
+    // Enough votes put a fixed-odds bet in the moderators' queue; only their approval opens it.
+    if (count >= bet.votesRequired && !needsOddsApproval(bet)) {
       await prisma.bet.updateMany({ where: { id: betId, status: "PROPOSED" }, data: { status: "OPEN", openedAt: new Date() } });
     }
   } else {
@@ -195,6 +203,16 @@ export async function placeWager(user: SessionUser, betId: string, optionId: str
   if (bet.oddsEnabled && !option.oddsX100) throw conflict("Cette option n'a pas encore de cote.");
 
   return prisma.$transaction(async (tx) => {
+    // Lock the bet row and re-check its state inside the transaction. Settling or
+    // cancelling updates the same row, so a wager can no longer slip in between
+    // their checks and be debited on a bet that is already closed (stuck PENDING).
+    const [locked] = await tx.$queryRaw<{ status: string; closesAt: Date; opensAt: Date | null }[]>`
+      SELECT "status", "closesAt", "opensAt" FROM "Bet" WHERE "id" = ${betId} FOR UPDATE`;
+    const now = Date.now();
+    if (!locked || locked.status !== "OPEN") throw conflict("Ce pari n'est plus ouvert.");
+    if (locked.closesAt.getTime() <= now) throw conflict("Les mises sont fermées pour ce pari.");
+    if (locked.opensAt && locked.opensAt.getTime() > now) throw conflict("Les paris sur ce match ne sont pas encore ouverts.");
+
     const wager = await tx.wager.create({
       data: { betId, optionId, userId: user.id, amount, oddsX100: bet.oddsEnabled ? option.oddsX100 : null },
     });
@@ -227,6 +245,7 @@ export async function updateOdds(user: SessionUser, betId: string, oddsEnabled: 
   const bet = await loadBet(betId, user);
   if (!canModerate(bet, user)) throw forbidden();
   if (bet.status !== "PROPOSED" && bet.status !== "OPEN") throw conflict("Ce pari est terminé.");
+  if (oddsEnabled && bet.groupId) throw badRequest("Les paris de groupe fonctionnent en cagnotte : pas de cotes fixes.");
   if (oddsEnabled && !settings.oddsFeatureEnabled) throw badRequest("Les cotes sont désactivées par les admins.");
   if (oddsEnabled !== bet.oddsEnabled) {
     const wagers = await prisma.wager.count({ where: { betId } });
@@ -258,7 +277,9 @@ export async function settleBet(user: SessionUser, betId: string, winningOptionI
     });
     if (claimed.count === 0) throw conflict("Ce pari vient d'être réglé par quelqu'un d'autre.");
     const wagers = await tx.wager.findMany({ where: { betId, status: "PENDING" } });
-    const results = computePayouts(bet.oddsEnabled, wagers, winningOptionId);
+    // Group bets created before the pool-only rule may still carry fixed odds:
+    // always pay them as a pool so they cannot mint coins.
+    const results = computePayouts(bet.oddsEnabled && !bet.groupId, wagers, winningOptionId);
     for (const r of results) {
       const w = wagers.find((x) => x.id === r.id)!;
       await tx.wager.update({ where: { id: r.id }, data: { status: r.status, payout: r.payout } });

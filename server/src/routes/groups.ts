@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "../lib/db";
 import { conflict, forbidden, notFound } from "../lib/http";
@@ -55,7 +56,10 @@ groupsRouter.post("/", async (req, res) => {
   res.status(201).json({ group: { id: group.id } });
 });
 
-groupsRouter.post("/join", async (req, res) => {
+// Limits invite-code guessing.
+const joinLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: true, legacyHeaders: false });
+
+groupsRouter.post("/join", joinLimiter, async (req, res) => {
   const { code } = z.object({ code: z.string().trim().toUpperCase().min(4) }).parse(req.body);
   const group = await prisma.group.findUnique({ where: { inviteCode: code } });
   if (!group) throw notFound("Aucun groupe avec ce code. Vérifie les lettres.");
