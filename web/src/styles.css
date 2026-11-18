@@ -779,16 +779,6 @@ a.board-title:hover {
 .quick button:hover {
   background: var(--panel-2);
 }
-.gain {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  color: var(--panel-muted);
-  font-size: 14px;
-}
-.gain .led {
-  font-size: 22px;
-}
 /* Irreversible confirm sits alone, apart from "Annuler" */
 .stake-actions {
   display: grid;
@@ -1612,4 +1602,80 @@ a.list-item:hover {
   height: 40px;
   font-size: 13px;
   font-family: ui-monospace, monospace;
+}
+
+/* Live potential gain while choosing a stake */
+.gain-panel {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-s);
+  background: var(--panel-2);
+  border: 1px solid var(--panel-line);
+}
+.gain-main {
+  display: grid;
+  gap: 6px;
+}
+.gain-main .led {
+  font-size: 44px;
+}
+.gain-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 14px;
+  color: var(--panel-muted);
+}
+.gain-facts strong {
+  color: var(--panel-text);
+  font-weight: 700;
+}
+.gain-facts strong.gain-up {
+  color: var(--odds-fav);
+}
+.gain-panel small {
+  font-size: 12px;
+  color: var(--panel-muted);
+}
+
+/* Stake slider: gold track fill up to the current stake */
+.stake-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+.stake-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--gold) var(--fill, 0%), var(--panel-3) var(--fill, 0%));
+}
+.stake-range::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--gold) var(--fill, 0%), var(--panel-3) var(--fill, 0%));
+}
+.stake-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--panel-text);
+  border: 3px solid var(--gold);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+}
+.stake-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--panel-text);
+  border: 3px solid var(--gold);
+}
+.stake-range:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
 }

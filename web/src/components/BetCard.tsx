@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Lock, Trophy, Users } from "lucide-react";
 import { api, type Bet } from "../lib/api";
 import { categoryPath, coins, countdown, CURRENCY, odds, oddsInfo, when } from "../lib/format";
-import { useAction, useNow } from "../lib/hooks";
+import { useAction, useNow, usePublicConfig } from "../lib/hooks";
 import { useSession } from "../lib/session";
 import { Led } from "./Led";
 import { Spinner } from "./States";
@@ -15,8 +15,9 @@ const seriesColor = (i: number) => `var(--series-${i % 6})`;
 export function BetCard({ bet, linkTitle = true, inMatch = false }: { bet: Bet; linkTitle?: boolean; inMatch?: boolean }) {
   const now = useNow(1000);
   const { user } = useSession();
+  const cfg = usePublicConfig();
   const [selected, setSelected] = useState<string | null>(null);
-  const [amount, setAmount] = useState("100");
+  const [amount, setAmount] = useState("10");
   const toast = useToast();
 
   const msLeft = new Date(bet.closesAt).getTime() - now;
@@ -36,11 +37,16 @@ export function BetCard({ bet, linkTitle = true, inMatch = false }: { bet: Bet; 
 
   const stake = Number(amount) || 0;
   const balance = user?.balance ?? 0;
+  // Recomputed on every keystroke / slider move. Pool bets include the new stake
+  // itself in the pot, which is exactly how the payout will be computed if nothing else moves.
   const potential = option
     ? bet.oddsEnabled
       ? Math.floor((stake * (option.odds ?? 100)) / 100)
       : Math.floor((stake * (bet.pool + stake)) / Math.max(1, option.total + stake))
     : 0;
+  const profit = potential - stake;
+  const multiplier = stake > 0 ? potential / stake : 0;
+  const maxStake = Math.max(0, Math.min(balance, cfg.data?.maxStake ?? balance));
 
   const submit = () => {
     if (!option) return;
@@ -175,25 +181,60 @@ export function BetCard({ bet, linkTitle = true, inMatch = false }: { bet: Bet; 
               autoFocus
             />
           </label>
+          {maxStake > 0 && (
+            <input
+              type="range"
+              className="stake-range"
+              min={0}
+              max={maxStake}
+              step={1}
+              value={Math.min(stake, maxStake)}
+              onChange={(e) => setAmount(e.target.value)}
+              aria-label="Ajuster la mise"
+              style={{ ["--fill" as string]: `${(Math.min(stake, maxStake) / maxStake) * 100}%` }}
+            />
+          )}
           <div className="quick">
-            {[50, 100, 250].map((v) => (
-              <button type="button" key={v} onClick={() => setAmount(String(v))}>
+            {[10, 25, 50].map((v) => (
+              <button type="button" key={v} onClick={() => setAmount(String(Math.min(v, maxStake || v)))}>
                 {v}
               </button>
             ))}
-            <button type="button" onClick={() => setAmount(String(balance))}>
+            <button type="button" onClick={() => setAmount(String(maxStake))}>
               Tout
             </button>
           </div>
-          <div className="gain">
-            <span>{bet.oddsEnabled ? "Gain si ça passe" : "Gain estimé (cagnotte)"}</span>
-            <Led value={coins(potential)} />
+
+          <div className="gain-panel" aria-live="polite">
+            <div className="gain-main">
+              <span className="label-c">Si {option.label} gagne, tu récupères</span>
+              <Led value={stake > 0 ? coins(potential) : "0"} label={`${coins(potential)} ${CURRENCY}`} />
+            </div>
+            <div className="gain-facts">
+              <span>
+                Bénéfice{" "}
+                <strong className={profit > 0 ? "gain-up" : ""}>{stake > 0 ? `+${coins(Math.max(0, profit))}` : "—"}</strong>
+              </span>
+              <span>
+                Multiplicateur <strong>{stake > 0 ? `×${multiplier.toFixed(2)}` : "—"}</strong>
+              </span>
+            </div>
+            {!bet.oddsEnabled &&
+              (bet.pool - option.total === 0 ? (
+                <small>
+                  Personne n'a encore misé sur les autres issues : pour l'instant tu ne récupérerais que ta mise. Ton gain grimpe dès que
+                  d'autres parient contre toi.
+                </small>
+              ) : (
+                <small>Estimation : en cagnotte, le gain final dépend aussi des mises placées après la tienne.</small>
+              ))}
           </div>
+
           {wager.error && <div className="alert">{wager.error.message}</div>}
           {stake > balance && <div className="alert">Solde insuffisant : tu as {coins(balance)} {CURRENCY}.</div>}
           <div className="stake-actions">
             <button className="btn btn-gold btn-block" disabled={wager.isPending || stake <= 0 || stake > balance}>
-              {wager.isPending ? <Spinner /> : `Miser ${coins(stake)} sur ${option.label}`}
+              {wager.isPending ? <Spinner /> : stake > 0 ? `Miser ${coins(stake)} pour gagner ${coins(potential)}` : "Choisis ta mise"}
             </button>
             <button type="button" className="link-btn" onClick={() => setSelected(null)}>
               Annuler
