@@ -335,3 +335,17 @@ export async function cancelLoadedBet(bet: BetRow) {
     }
   });
 }
+
+/**
+ * Fixes a wrong category at any stage (proposed, open, settled…). Moderators for
+ * public bets, the group owner for group bets. A match-linked bet keeps its match in sync.
+ */
+export async function changeBetCategory(user: SessionUser, betId: string, category: string) {
+  const bet = await loadBet(betId, user);
+  if (!canModerate(bet, user)) throw forbidden();
+  if (bet.category === category) return;
+  await prisma.$transaction([
+    prisma.bet.update({ where: { id: betId }, data: { category } }),
+    ...(bet.match ? [prisma.match.update({ where: { id: bet.match.id }, data: { category } })] : []),
+  ]);
+}

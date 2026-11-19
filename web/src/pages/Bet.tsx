@@ -10,6 +10,7 @@ import { BetCard } from "../components/BetCard";
 import { ProposalCard } from "../components/ProposalCard";
 import { ErrorBox, Skeletons, Spinner } from "../components/States";
 import { useToast } from "../components/Toast";
+import { CategoryEditor } from "../components/CategoryEditor";
 
 export function BetPage() {
   const { id = "" } = useParams();
@@ -59,7 +60,7 @@ function BetDetail({ bet }: { bet: Bet }) {
           <Info k="Fin des mises" v={when(bet.closesAt)} />
           <Info k="Proposé par" v={bet.creator.username} />
           {bet.group && <Info k="Groupe" v={<Link to={`/groupes/${bet.group.id}`}>{bet.group.name}</Link>} />}
-          <Info k="Votes" v={`${bet.voteCount}/${bet.votesRequired}`} />
+          {!bet.matchId && <Info k="Votes" v={`${bet.voteCount}/${bet.votesRequired}`} />}
         </ul>
       </section>
 
@@ -84,6 +85,7 @@ function BetDetail({ bet }: { bet: Bet }) {
         </section>
       )}
 
+      {bet.canModerate && <BetCategory bet={bet} />}
       {bet.canModerate && <Moderation bet={bet} />}
 
       {isProposal && bet.creator.id === user?.id && !bet.canModerate && (
@@ -114,6 +116,24 @@ function Info({ k, v }: { k: string; v: React.ReactNode }) {
       </span>
       <span style={{ fontWeight: 600 }}>{v}</span>
     </li>
+  );
+}
+
+/** Moderators (or the group owner) can fix a wrong sport at any stage, even after settling. */
+function BetCategory({ bet }: { bet: Bet }) {
+  const toast = useToast();
+  const save = useAction((category: string) => api(`/bets/${bet.id}/category`, { method: "PATCH", body: { category } }), [
+    ["bet", bet.id],
+    ["matches"],
+    ["match"],
+  ]);
+  return (
+    <CategoryEditor
+      value={bet.category}
+      pending={save.isPending}
+      error={save.error}
+      onSave={(category) => save.mutate(category, { onSuccess: () => toast("Catégorie corrigée") })}
+    />
   );
 }
 

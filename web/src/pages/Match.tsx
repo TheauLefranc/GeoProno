@@ -5,10 +5,13 @@ import { ChevronLeft, MapPin, Minus, Plus } from "lucide-react";
 import { api, type Bet, type Match } from "../lib/api";
 import { categoryPath, countdown, when } from "../lib/format";
 import { useAction, useNow } from "../lib/hooks";
+import { useSession } from "../lib/session";
+import { canManageCategory } from "../lib/categories";
 import { BetCard } from "../components/BetCard";
 import { Led } from "../components/Led";
 import { ErrorBox, Skeletons, Spinner } from "../components/States";
 import { useToast } from "../components/Toast";
+import { CategoryEditor } from "../components/CategoryEditor";
 
 export function MatchPage() {
   const { id = "" } = useParams();
@@ -37,12 +40,33 @@ export function MatchPage() {
       ) : (
         <div className="stack" style={{ gap: 20 }}>
           <Scoreboard match={m!} />
+          {m!.canManage && <MatchCategory match={m!} />}
           {m!.canManage && <MatchControls match={m!} />}
           {m!.bet && bet.data && <BetCard bet={bet.data} inMatch />}
           {!m!.bet && <p style={{ color: "var(--ink-2)" }}>Pas de pari sur ce match.</p>}
         </div>
       )}
     </div>
+  );
+}
+
+/** Fix a wrong sport at any stage. Sport managers can only pick among the sports they run. */
+function MatchCategory({ match: m }: { match: Match }) {
+  const { user } = useSession();
+  const toast = useToast();
+  const save = useAction((category: string) => api(`/matches/${m.id}/category`, { method: "PATCH", body: { category } }), [
+    ["match", m.id],
+    ["matches"],
+    ["bet"],
+  ]);
+  return (
+    <CategoryEditor
+      value={m.category}
+      allowed={(sub) => canManageCategory(user, sub)}
+      pending={save.isPending}
+      error={save.error}
+      onSave={(category) => save.mutate(category, { onSuccess: () => toast("Sport corrigé") })}
+    />
   );
 }
 

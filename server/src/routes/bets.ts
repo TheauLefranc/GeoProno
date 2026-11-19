@@ -7,6 +7,7 @@ import { param, requireAuth } from "../lib/auth";
 import {
   betInclude,
   cancelBet,
+  changeBetCategory,
   CATEGORIES,
   loadBet,
   placeWager,
@@ -139,6 +140,13 @@ betsRouter.post("/:id/approve", async (req, res) => {
 betsRouter.post("/:id/reject", async (req, res) => {
   await setStatusFromModeration(req.user!, param(req, "id"), "reject");
   res.status(204).end();
+});
+
+betsRouter.patch("/:id/category", async (req, res) => {
+  const { category } = z.object({ category: z.enum(CATEGORIES) }).parse(req.body);
+  await changeBetCategory(req.user!, param(req, "id"), category);
+  const [bet] = await serializeBets([await loadBet(param(req, "id"), req.user)], req.user);
+  res.json({ bet });
 });
 
 betsRouter.patch("/:id/odds", async (req, res) => {

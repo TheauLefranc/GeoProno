@@ -8,6 +8,7 @@ import { param, requireAuth } from "../lib/auth";
 import { canManageCategory, CATEGORIES, isScopedManager, MAIN_CATEGORIES, subcategoriesOf } from "../services/categories";
 import {
   cancelMatch,
+  changeMatchCategory,
   createMatch,
   finishMatch,
   loadMatch,
@@ -85,6 +86,13 @@ matchesRouter.post("/", async (req, res) => {
   if (input.homeName.toLowerCase() === input.awayName.toLowerCase()) throw badRequest("Les deux équipes ont le même nom.");
   const match = await createMatch(req.user!, input);
   res.status(201).json({ match: serializeMatch(await loadMatch(match.id), req.user) });
+});
+
+/** Fix a wrong sport at any stage; checked against both the old and new category. */
+matchesRouter.patch("/:id/category", async (req, res) => {
+  const { category } = z.object({ category: z.enum(CATEGORIES) }).parse(req.body);
+  await changeMatchCategory(req.user!, param(req, "id"), category);
+  res.json({ match: serializeMatch(await loadMatch(param(req, "id")), req.user) });
 });
 
 matchesRouter.patch("/:id", canRunMatch, async (req, res) => {

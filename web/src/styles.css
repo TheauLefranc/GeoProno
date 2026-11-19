@@ -1702,3 +1702,31 @@ a.list-item:hover {
   opacity: 0.55;
   cursor: default;
 }
+
+/* Fix a wrong category (bet / match pages) */
+.cat-edit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-s);
+  border: 1px dashed var(--line);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.cat-edit strong {
+  color: var(--ink);
+}
+.cat-edit.open {
+  display: grid;
+  border-style: solid;
+  background: var(--surface);
+}
+.cat-edit.open > .field,
+.cat-edit.open .input {
+  width: 100%;
+}
+.cat-edit.open {
+  justify-content: stretch;
+}

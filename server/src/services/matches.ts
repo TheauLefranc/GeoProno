@@ -1,6 +1,6 @@
 import type { Match, Prisma } from "@prisma/client";
 import { prisma } from "../lib/db";
-import { badRequest, conflict, notFound } from "../lib/http";
+import { badRequest, conflict, forbidden, notFound } from "../lib/http";
 import type { SessionUser } from "../lib/auth";
 import { cancelLoadedBet, loadBet, settleLoadedBet } from "./bets";
 import { canManageCategory } from "./categories";
@@ -196,3 +196,20 @@ export async function cancelMatch(user: SessionUser, id: string) {
 }
 
 export { load as loadMatch };
+
+/**
+ * Fixes a match category at any stage. The caller must manage BOTH the current
+ * and the new category, so a sport manager cannot move a match out of, or into,
+ * someone else's sport. The match bet follows.
+ */
+export async function changeMatchCategory(user: SessionUser, id: string, category: string) {
+  const m = await load(id);
+  if (!canManageCategory(user, m.category) || !canManageCategory(user, category)) {
+    throw forbidden("Tu dois gérer l'ancien et le nouveau sport pour déplacer ce match.");
+  }
+  if (m.category === category) return;
+  await prisma.$transaction([
+    prisma.match.update({ where: { id }, data: { category } }),
+    ...(m.betId ? [prisma.bet.update({ where: { id: m.betId }, data: { category } })] : []),
+  ]);
+}
