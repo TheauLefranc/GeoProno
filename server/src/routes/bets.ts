@@ -61,7 +61,12 @@ betsRouter.get("/", async (req, res) => {
     },
     proposed: { where: { status: "PROPOSED", closesAt: { gt: now } }, orderBy: { createdAt: "desc" } },
     awaiting: { where: { status: "OPEN", closesAt: { lte: now } }, orderBy: { closesAt: "asc" } },
-    done: { where: { status: { in: ["SETTLED", "CANCELLED"] } }, orderBy: { settledAt: "desc" } },
+    // A cancelled bet nobody wagered on is noise in the history: only keep cancelled
+    // bets that had stakes (players need to see they were refunded).
+    done: {
+      where: { OR: [{ status: "SETTLED" }, { status: "CANCELLED", wagers: { some: {} } }] },
+      orderBy: { settledAt: "desc" },
+    },
   };
   const v = byView[q.view];
   const bets = await prisma.bet.findMany({
