@@ -52,6 +52,9 @@ model User {
   balance        Int      @default(0)
   /// Bumped on password reset/change: sessions signed with an older value are rejected.
   sessionVersion Int      @default(0)
+  /// Sport managers: category ids this user may run matches for (main ids like
+  /// "SPORT" cover all their subcategories). Admins/moderators manage everything.
+  managedCategories String[] @default([])
   createdAt      DateTime @default(now())
 
   wagers                Wager[]

@@ -7,6 +7,7 @@ import { computePayouts, poolOdds, votesNeeded } from "./payout";
 import { getSettings } from "./settings";
 
 export { CATEGORIES } from "./categories";
+import { canManageCategory, isScopedManager } from "./categories";
 
 
 export const betInclude = {
@@ -17,7 +18,7 @@ export const betInclude = {
   match: { select: { id: true } },
 } satisfies Prisma.BetInclude;
 
-type BetRow = Prisma.BetGetPayload<{ include: typeof betInclude }>;
+export type BetRow = Prisma.BetGetPayload<{ include: typeof betInclude }>;
 
 /** Group bets are only visible to members. */
 export async function assertCanSee(bet: { groupId: string | null }, user?: SessionUser) {
@@ -198,6 +199,10 @@ export async function placeWager(user: SessionUser, betId: string, optionId: str
   if (bet.status !== "OPEN") throw conflict("Ce pari n'est pas ouvert.");
   if (bet.closesAt.getTime() <= Date.now()) throw conflict("Les mises sont fermées pour ce pari.");
   if (bet.opensAt && bet.opensAt.getTime() > Date.now()) throw conflict("Les paris sur ce match ne sont pas encore ouverts.");
+  // A sport manager enters the score of these matches: no betting on them (conflict of interest).
+  if (bet.match && isScopedManager(user) && canManageCategory(user, bet.category)) {
+    throw forbidden("Tu gères ce sport : tu ne peux pas parier sur ses matchs.");
+  }
   const option = bet.options.find((o) => o.id === optionId);
   if (!option) throw badRequest("Option inconnue.");
   if (bet.oddsEnabled && !option.oddsX100) throw conflict("Cette option n'a pas encore de cote.");
@@ -266,6 +271,15 @@ export async function updateOdds(user: SessionUser, betId: string, oddsEnabled: 
 export async function settleBet(user: SessionUser, betId: string, winningOptionId: string) {
   const bet = await loadBet(betId, user);
   if (!canModerate(bet, user)) throw forbidden();
+  await settleLoadedBet(bet, winningOptionId);
+}
+
+/**
+ * Pays out a bet. No permission check: callers must have authorised the action
+ * (settleBet for moderators, finishMatch for whoever manages the match sport).
+ */
+export async function settleLoadedBet(bet: BetRow, winningOptionId: string) {
+  const betId = bet.id;
   if (bet.status !== "OPEN") throw conflict("Seul un pari ouvert peut être réglé.");
   const option = bet.options.find((o) => o.id === winningOptionId);
   if (!option) throw badRequest("Option inconnue.");
@@ -300,6 +314,12 @@ export async function cancelBet(user: SessionUser, betId: string) {
   const bet = await loadBet(betId, user);
   const ownProposal = bet.status === "PROPOSED" && bet.creatorId === user.id;
   if (!canModerate(bet, user) && !ownProposal) throw forbidden();
+  await cancelLoadedBet(bet);
+}
+
+/** Refunds every pending wager. No permission check: see settleLoadedBet. */
+export async function cancelLoadedBet(bet: BetRow) {
+  const betId = bet.id;
   if (bet.status !== "PROPOSED" && bet.status !== "OPEN") throw conflict("Ce pari est déjà terminé.");
 
   await prisma.$transaction(async (tx) => {

@@ -11,6 +11,8 @@ const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
 export interface SessionUser {
   id: string;
   role: Role;
+  /** Sport-manager scope (category ids). Empty for regular players. */
+  managedCategories: string[];
 }
 
 declare global {
@@ -47,9 +49,14 @@ export async function loadUser(req: Request, _res: Response, next: NextFunction)
   if (!token) return next();
   try {
     const payload = jwt.verify(token, config.jwtSecret) as { sub: string; v?: number };
-    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true, sessionVersion: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, role: true, sessionVersion: true, managedCategories: true },
+    });
     // Tokens issued before versioning carry no `v`: treat them as version 0.
-    if (user && (payload.v ?? 0) === user.sessionVersion) req.user = { id: user.id, role: user.role };
+    if (user && (payload.v ?? 0) === user.sessionVersion) {
+      req.user = { id: user.id, role: user.role, managedCategories: user.managedCategories };
+    }
   } catch {
     // invalid or expired token: treated as signed out
   }

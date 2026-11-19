@@ -1679,3 +1679,26 @@ a.list-item:hover {
   outline: 2px solid var(--gold);
   outline-offset: 4px;
 }
+
+/* Admin: sport-manager scope */
+.scope-editor {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: var(--radius-s);
+  background: var(--ground);
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+}
+.scope-editor p {
+  color: var(--ink-2);
+}
+.scope-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.scope-group .chip:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

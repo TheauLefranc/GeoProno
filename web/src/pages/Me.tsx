@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ChevronRight, LogOut, Shield } from "lucide-react";
+import { CalendarDays, ChevronRight, LogOut, Shield } from "lucide-react";
 import { api, type Transaction, type WagerHistory } from "../lib/api";
 import { ago, categoryLabel, coins, CURRENCY, odds, signed } from "../lib/format";
 import { usePublicConfig } from "../lib/hooks";
 import { isStaff, useSession, useSetUser } from "../lib/session";
+import { scopeLabels } from "../lib/categories";
 import { Led } from "../components/Led";
 import { Empty, ErrorBox, Skeletons, Spinner } from "../components/States";
 import { useToast } from "../components/Toast";
@@ -59,6 +60,21 @@ export function MePage() {
         <p style={{ color: "var(--ink-2)", fontSize: 14, marginTop: 12 }}>
           Chaque matin à {cfg.data.refillHour} h, ton solde remonte à {coins(cfg.data.refillThreshold)} {CURRENCY} s'il est en dessous.
         </p>
+      )}
+
+      {!isStaff(user) && (user?.managedCategories?.length ?? 0) > 0 && (
+        <ul className="list" style={{ marginTop: 16 }}>
+          <li>
+            <Link to="/matchs" className="list-item">
+              <CalendarDays size={20} aria-hidden />
+              <div className="list-main">
+                <div className="list-title">Responsable : {scopeLabels(user!.managedCategories).join(", ")}</div>
+                <div className="list-sub">Ajoute les matchs de tes sports et mets à jour les scores en direct</div>
+              </div>
+              <ChevronRight size={18} aria-hidden color="var(--ink-3)" />
+            </Link>
+          </li>
+        </ul>
       )}
 
       {isStaff(user) && (

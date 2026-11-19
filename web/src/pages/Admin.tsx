@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { api, type Role, type Settings, type User } from "../lib/api";
 import { coins, CURRENCY } from "../lib/format";
+import { scopeLabels, TAXONOMY } from "../lib/categories";
 import { useAction } from "../lib/hooks";
 import { isStaff, useSession } from "../lib/session";
 import { ErrorBox, Skeletons, Spinner } from "../components/States";
@@ -226,8 +227,83 @@ function UserRow({ u }: { u: User }) {
         </button>
       </form>
       {update.error && <div className="alert" style={{ width: "100%" }}>{update.error.message}</div>}
+      {u.role === "USER" && <ScopeEditor u={u} />}
       <ResetLink u={u} />
     </li>
+  );
+}
+
+/**
+ * Sport managers: pick whole categories ("Sport") or single sports ("Rugby").
+ * In scope, the user can add matches, score them live and finish them.
+ */
+function ScopeEditor({ u }: { u: User }) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [scope, setScope] = useState<string[]>(u.managedCategories ?? []);
+  const save = useAction((managedCategories: string[]) => api(`/admin/users/${u.id}`, { method: "PATCH", body: { managedCategories } }), [
+    ["admin-users"],
+  ]);
+  const toggle = (id: string) => setScope((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const current = u.managedCategories ?? [];
+  const dirty = [...scope].sort().join() !== [...current].sort().join();
+
+  return (
+    <div style={{ width: "100%" }}>
+      <button type="button" className="link-btn" style={{ fontSize: 14, color: "var(--ink-2)" }} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        {current.length ? `Responsable de : ${scopeLabels(current).join(", ")}` : "Responsable de sport : aucun"}
+      </button>
+      {open && (
+        <div className="scope-editor">
+          <p>Ce joueur pourra ajouter les matchs de ces sports, mettre à jour leur score en direct et les terminer (ce qui règle le pari).</p>
+          {TAXONOMY.map((m) => {
+            const whole = scope.includes(m.id);
+            return (
+              <div key={m.id} className="scope-group">
+                <button type="button" className="chip chip-sub" aria-pressed={whole} onClick={() => toggle(m.id)}>
+                  {m.subs.length > 1 ? `Tout ${m.label.toLowerCase()}` : m.label}
+                </button>
+                {m.subs.length > 1 &&
+                  m.subs.map((s) => (
+                    <button
+                      type="button"
+                      key={s.id}
+                      className="chip chip-sub"
+                      aria-pressed={whole || scope.includes(s.id)}
+                      disabled={whole}
+                      onClick={() => toggle(s.id)}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+              </div>
+            );
+          })}
+          {save.error && <div className="alert">{save.error.message}</div>}
+          <div className="row">
+            <button
+              type="button"
+              className="btn btn-dark btn-sm"
+              disabled={!dirty || save.isPending}
+              onClick={() =>
+                // A whole category already covers its sports: drop redundant entries.
+                save.mutate(
+                  scope.filter((id) => !TAXONOMY.some((m) => scope.includes(m.id) && m.subs.some((s) => s.id === id && s.id !== m.id))),
+                  { onSuccess: () => (toast("Sports gérés mis à jour"), setOpen(false)) },
+                )
+              }
+            >
+              Enregistrer
+            </button>
+            {current.length > 0 && (
+              <button type="button" className="btn btn-ghost btn-sm" disabled={save.isPending} onClick={() => setScope([])}>
+                Tout retirer
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

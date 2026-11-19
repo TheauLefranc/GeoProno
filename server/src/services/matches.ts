@@ -2,7 +2,8 @@ import type { Match, Prisma } from "@prisma/client";
 import { prisma } from "../lib/db";
 import { badRequest, conflict, notFound } from "../lib/http";
 import type { SessionUser } from "../lib/auth";
-import { cancelBet, settleBet } from "./bets";
+import { cancelLoadedBet, loadBet, settleLoadedBet } from "./bets";
+import { canManageCategory } from "./categories";
 import { getSettings } from "./settings";
 
 const DAY = 24 * 3600_000;
@@ -22,7 +23,7 @@ export const matchInclude = {
 
 type MatchRow = Prisma.MatchGetPayload<{ include: typeof matchInclude }>;
 
-export function serializeMatch(m: MatchRow) {
+export function serializeMatch(m: MatchRow, user?: SessionUser) {
   const now = Date.now();
   const bet = m.bet;
   return {
@@ -37,6 +38,7 @@ export function serializeMatch(m: MatchRow) {
     awayScore: m.awayScore,
     liveNote: m.liveNote,
     updatedAt: m.updatedAt,
+    canManage: canManageCategory(user, m.category),
     bet: bet
       ? {
           id: bet.id,
@@ -178,11 +180,11 @@ export async function finishMatch(user: SessionUser, id: string, homeScore: numb
 
   const winner = homeScore > awayScore ? m.homeOptionId : awayScore > homeScore ? m.awayOptionId : m.drawOptionId;
   if (winner) {
-    await settleBet(user, m.bet.id, winner);
+    await settleLoadedBet(await loadBet(m.bet.id), winner);
     return { settled: true };
   }
   // Draw with no "match nul" option: nobody can win, refund everyone.
-  await cancelBet(user, m.bet.id);
+  await cancelLoadedBet(await loadBet(m.bet.id));
   return { settled: false, refunded: true };
 }
 
@@ -190,7 +192,7 @@ export async function cancelMatch(user: SessionUser, id: string) {
   const m = await load(id);
   if (m.status === "FINISHED") throw conflict("Ce match est déjà terminé.");
   await prisma.match.update({ where: { id }, data: { status: "CANCELLED", liveNote: null } });
-  if (m.bet && (m.bet.status === "OPEN" || m.bet.status === "PROPOSED")) await cancelBet(user, m.bet.id);
+  if (m.bet && (m.bet.status === "OPEN" || m.bet.status === "PROPOSED")) await cancelLoadedBet(await loadBet(m.bet.id));
 }
 
 export { load as loadMatch };

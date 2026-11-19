@@ -7,6 +7,7 @@ import { applyBalanceChange } from "../services/ledger";
 import { getSettings } from "../services/settings";
 import { runDailyRefill } from "../services/refill";
 import { createResetLink } from "../services/passwordReset";
+import { SCOPE_IDS } from "../services/categories";
 
 export const adminRouter = Router();
 
@@ -44,7 +45,7 @@ adminRouter.get("/users", requireRole("ADMIN"), async (req, res) => {
   const { q } = z.object({ q: z.string().trim().optional() }).parse(req.query);
   const users = await prisma.user.findMany({
     where: q ? { OR: [{ username: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }] } : {},
-    select: { id: true, email: true, username: true, role: true, balance: true, createdAt: true },
+    select: { id: true, email: true, username: true, role: true, balance: true, createdAt: true, managedCategories: true },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -53,21 +54,24 @@ adminRouter.get("/users", requireRole("ADMIN"), async (req, res) => {
 
 adminRouter.patch("/users/:id", requireRole("ADMIN"), async (req, res) => {
   const id = param(req, "id");
-  const { role, adjust, note } = z
+  const { role, adjust, note, managedCategories } = z
     .object({
       role: z.enum(["USER", "MODERATOR", "ADMIN"]).optional(),
       adjust: z.number().int().min(-1_000_000).max(1_000_000).optional(),
       note: z.string().trim().max(120).optional(),
+      /** Sport-manager scope: main categories and/or subcategories. */
+      managedCategories: z.array(z.enum(SCOPE_IDS)).max(30).optional(),
     })
     .parse(req.body);
   if (role && id === req.user!.id && role !== "ADMIN") throw badRequest("Tu ne peux pas retirer ton propre rôle admin.");
   await prisma.$transaction(async (tx) => {
     if (role) await tx.user.update({ where: { id }, data: { role } });
+    if (managedCategories) await tx.user.update({ where: { id }, data: { managedCategories: [...new Set(managedCategories)] } });
     if (adjust) await applyBalanceChange(tx, { userId: id, amount: adjust, type: "ADMIN_ADJUST", note: note || "Ajustement admin" });
   });
   const user = await prisma.user.findUniqueOrThrow({
     where: { id },
-    select: { id: true, email: true, username: true, role: true, balance: true, createdAt: true },
+    select: { id: true, email: true, username: true, role: true, balance: true, createdAt: true, managedCategories: true },
   });
   res.json({ user });
 });

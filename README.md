@@ -12,6 +12,7 @@ Les paris de l'école en GeoPuntos, la monnaie virtuelle du site : matchs, baby-
 - **Groupes** : création, code d'invitation, défis privés (votes = moitié du groupe, résultat saisi par le créateur), classement du groupe.
 - **Classement général** au bénéfice net sur les paris publics réglés (7 j / 30 j / tout). Les recharges ne comptent pas.
 - **Mot de passe oublié** (sans email) : un admin génère dans Admin → Comptes un lien de réinitialisation à usage unique, valable 1 h, et l'envoie à l'élève. Changer son mot de passe déconnecte les autres appareils.
+- **Responsables de sport** : dans Admin → Comptes, un joueur peut être nommé responsable d'une catégorie entière (« Sport ») ou de sports précis (« Rugby », « Foot »). Il ajoute les matchs de ses sports, met à jour les scores en direct et les termine (ce qui règle le pari). Ses matchs sont en cagnotte (pas de cotes fixes) et il ne peut pas parier dessus.
 - **Admin** : règles du jeu, rôles, ajustement de solde, recharge manuelle.
 
 ## Stack

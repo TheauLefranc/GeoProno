@@ -61,3 +61,22 @@ export const categoryPath = (sub: string) => {
   const label = categoryLabel(sub);
   return m && m.label !== label ? `${m.label} · ${label}` : label;
 };
+
+/** Mirror of the server rule: staff manage every match, sport managers their scope. */
+export function canManageCategory(user: { role: string; managedCategories?: string[] } | null, sub: string): boolean {
+  if (!user) return false;
+  if (user.role === "ADMIN" || user.role === "MODERATOR") return true;
+  const scope = user.managedCategories ?? [];
+  return scope.includes(sub) || scope.includes(mainOf(sub)?.id ?? "");
+}
+
+/** May add matches in at least one category. */
+export const canManageMatches = (user: { role: string; managedCategories?: string[] } | null) =>
+  !!user && (user.role === "ADMIN" || user.role === "MODERATOR" || (user.managedCategories?.length ?? 0) > 0);
+
+/** Labels of a scope, e.g. ["Sport (tout)", "E-sport"]. */
+export const scopeLabels = (scope: string[]) =>
+  scope.map((id) => {
+    const main = TAXONOMY.find((m) => m.id === id);
+    return main ? (main.subs.length > 1 ? `${main.label} (tout)` : main.label) : categoryLabel(id);
+  });

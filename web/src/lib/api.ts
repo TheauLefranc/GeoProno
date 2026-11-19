@@ -9,6 +9,8 @@ export interface User {
   role: Role;
   balance: number;
   createdAt: string;
+  /** Sport-manager scope: category ids (main or sub). */
+  managedCategories: string[];
 }
 
 export interface BetOption {
@@ -69,6 +71,8 @@ export interface Match {
   awayScore: number;
   liveNote: string | null;
   updatedAt: string;
+  /** The current user may add/score/finish this match. */
+  canManage: boolean;
   bet: {
     id: string;
     status: BetStatus;

@@ -5,7 +5,6 @@ import { ChevronLeft, MapPin, Minus, Plus } from "lucide-react";
 import { api, type Bet, type Match } from "../lib/api";
 import { categoryPath, countdown, when } from "../lib/format";
 import { useAction, useNow } from "../lib/hooks";
-import { isStaff, useSession } from "../lib/session";
 import { BetCard } from "../components/BetCard";
 import { Led } from "../components/Led";
 import { ErrorBox, Skeletons, Spinner } from "../components/States";
@@ -13,7 +12,6 @@ import { useToast } from "../components/Toast";
 
 export function MatchPage() {
   const { id = "" } = useParams();
-  const { user } = useSession();
   const q = useQuery({
     queryKey: ["match", id],
     queryFn: () => api<{ match: Match }>(`/matches/${id}`).then((d) => d.match),
@@ -39,7 +37,7 @@ export function MatchPage() {
       ) : (
         <div className="stack" style={{ gap: 20 }}>
           <Scoreboard match={m!} />
-          {isStaff(user) && <MatchControls match={m!} />}
+          {m!.canManage && <MatchControls match={m!} />}
           {m!.bet && bet.data && <BetCard bet={bet.data} inMatch />}
           {!m!.bet && <p style={{ color: "var(--ink-2)" }}>Pas de pari sur ce match.</p>}
         </div>

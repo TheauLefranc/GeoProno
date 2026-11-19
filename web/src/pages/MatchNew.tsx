@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { api, type Match } from "../lib/api";
-import { mainOf, TAXONOMY } from "../lib/categories";
+import { canManageCategory, canManageMatches, mainOf, TAXONOMY } from "../lib/categories";
 import { when } from "../lib/format";
 import { useAction, usePublicConfig } from "../lib/hooks";
 import { isStaff, useSession } from "../lib/session";
@@ -21,7 +21,10 @@ export function MatchNewPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const cfg = usePublicConfig();
-  const [category, setCategory] = useState("FOOT");
+  // Sport managers only see the categories they run; staff see everything.
+  const allowed = TAXONOMY.map((m) => ({ ...m, subs: m.subs.filter((s) => canManageCategory(user, s.id)) })).filter((m) => m.subs.length > 0);
+  const staff = isStaff(user);
+  const [category, setCategory] = useState(() => (allowed.some((m) => m.subs.some((s) => s.id === "FOOT")) ? "FOOT" : (allowed[0]?.subs[0]?.id ?? "FOOT")));
   const [homeName, setHome] = useState("");
   const [awayName, setAway] = useState("");
   const [location, setLocation] = useState("");
@@ -42,9 +45,9 @@ export function MatchNewPage() {
           startsAt: new Date(startsAt).toISOString(),
           withBet,
           allowDraw,
-          oddsEnabled: withBet && oddsEnabled,
+          oddsEnabled: withBet && oddsEnabled && staff,
           odds:
-            withBet && oddsEnabled
+            withBet && oddsEnabled && staff
               ? {
                   home: Number(odds.home.replace(",", ".")) || undefined,
                   draw: allowDraw ? Number(odds.draw.replace(",", ".")) || undefined : undefined,
@@ -56,7 +59,7 @@ export function MatchNewPage() {
     [["matches"]],
   );
 
-  if (!isStaff(user)) return <Navigate to="/matchs" replace />;
+  if (!canManageMatches(user)) return <Navigate to="/matchs" replace />;
   const days = cfg.data?.betOpenDays ?? 5;
   const start = new Date(startsAt);
   const opens = new Date(Math.max(Date.now(), start.getTime() - days * 86_400_000));
@@ -98,15 +101,15 @@ export function MatchNewPage() {
         <div className="field">
           <span>Catégorie</span>
           <div className="rail" style={{ paddingTop: 0, paddingBottom: 0 }} role="group" aria-label="Catégorie principale">
-            {TAXONOMY.map((m) => (
+            {allowed.map((m) => (
               <button type="button" key={m.id} className="chip" aria-pressed={mainOf(category)?.id === m.id} onClick={() => setCategory(m.subs[0].id)}>
                 {m.label}
               </button>
             ))}
           </div>
-          {(mainOf(category)?.subs.length ?? 0) > 1 && (
+          {(allowed.find((m) => m.id === mainOf(category)?.id)?.subs.length ?? 0) > 1 && (
             <div className="rail" style={{ paddingTop: 4, paddingBottom: 0 }} role="group" aria-label="Sous-catégorie">
-              {mainOf(category)!.subs.map((s) => (
+              {allowed.find((m) => m.id === mainOf(category)?.id)!.subs.map((s) => (
                 <button type="button" key={s.id} className="chip chip-sub" aria-pressed={category === s.id} onClick={() => setCategory(s.id)}>
                   {s.label}
                 </button>
@@ -158,19 +161,26 @@ export function MatchNewPage() {
               </span>
               <input type="checkbox" checked={allowDraw} onChange={(e) => setAllowDraw(e.target.checked)} />
             </label>
-            <label className="switch">
-              <span>
-                Cotes fixes
-                <small>{oddsEnabled ? "Gain = mise × cote." : "Désactivé : la cagnotte est partagée entre les gagnants."}</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={oddsEnabled}
-                disabled={cfg.data?.oddsFeatureEnabled === false}
-                onChange={(e) => setOddsEnabled(e.target.checked)}
-              />
-            </label>
-            {oddsEnabled && (
+            {staff ? (
+              <label className="switch">
+                <span>
+                  Cotes fixes
+                  <small>{oddsEnabled ? "Gain = mise × cote." : "Désactivé : la cagnotte est partagée entre les gagnants."}</small>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={oddsEnabled}
+                  disabled={cfg.data?.oddsFeatureEnabled === false}
+                  onChange={(e) => setOddsEnabled(e.target.checked)}
+                />
+              </label>
+            ) : (
+              <p style={{ color: "var(--ink-2)", fontSize: 14 }}>
+                Pari en cagnotte : les gagnants se partagent les mises. Les cotes fixes sont réservées aux admins et modérateurs. En tant que
+                responsable de ce sport, tu ne pourras pas parier sur ce match.
+              </p>
+            )}
+            {staff && oddsEnabled && (
               <div className="row" style={{ alignItems: "end" }}>
                 {oddsInput("home", homeName || "Équipe A")}
                 {allowDraw && oddsInput("draw", "Nul")}

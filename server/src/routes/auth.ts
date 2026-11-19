@@ -28,7 +28,7 @@ const registerSchema = z.object({
 export async function publicUser(id: string) {
   return prisma.user.findUniqueOrThrow({
     where: { id },
-    select: { id: true, email: true, username: true, role: true, balance: true, createdAt: true },
+    select: { id: true, email: true, username: true, role: true, balance: true, createdAt: true, managedCategories: true },
   });
 }
 
