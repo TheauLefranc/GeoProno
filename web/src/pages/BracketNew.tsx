@@ -246,7 +246,6 @@ export function BracketNewPage() {
         <p style={{ color: "var(--ink-2)", fontSize: 14 }}>
           Cagnotte : chaque bon pronostic rapporte des points, qui doublent à chaque tour. À la finale, toutes les mises sont partagées au prorata mise ×
           points.
-          {!(user?.role === "ADMIN" || user?.role === "MODERATOR") && " En tant que responsable de ce sport, tu ne pourras pas jouer ce tableau."}
         </p>
 
         {create.error && (

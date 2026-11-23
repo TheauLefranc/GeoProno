@@ -3,7 +3,7 @@ import { prisma, type Tx } from "../lib/db";
 import { badRequest, conflict, forbidden, notFound } from "../lib/http";
 import type { SessionUser } from "../lib/auth";
 import { cancelBetTx, settleBetTx } from "./bets";
-import { canManageCategory, isScopedManager } from "./categories";
+import { canManageCategory } from "./categories";
 import {
   BYE,
   computeBracketPayouts,
@@ -89,8 +89,6 @@ export function serializeBracket(b: BracketRow, user?: SessionUser, detail = fal
     entryCount: b.entries.length,
     maxPoints: maxPoints(b.size, b.participants),
     canManage: canManageCategory(user, b.category),
-    /** A sport manager running this sport may not bet on it (conflict of interest). */
-    canEnter: !(isScopedManager(user) && canManageCategory(user, b.category)),
     /** Bet of each match (by index), once both entrants are known. */
     matchBets: b.matchBets.map((m) => ({
       match: m.bracketMatchIndex!,
@@ -308,9 +306,6 @@ export async function updateBracket(user: SessionUser, id: string, patch: { titl
 export async function saveEntry(user: SessionUser, id: string, picks: unknown, amount?: number) {
   const b = await loadBracket(id);
   if (stateOf(b) !== "OPEN") throw conflict("Les pronostics sont fermés pour ce tableau.");
-  if (isScopedManager(user) && canManageCategory(user, b.category)) {
-    throw forbidden("Tu gères ce sport : tu ne peux pas parier sur ce tableau.");
-  }
   const error = validatePicks(b.size, b.participants, picks);
   if (error) throw badRequest(error);
   const existing = b.entries.find((e) => e.userId === user.id);

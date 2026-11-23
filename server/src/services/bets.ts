@@ -7,7 +7,6 @@ import { computePayouts, poolOdds, votesNeeded } from "./payout";
 import { getSettings } from "./settings";
 
 export { CATEGORIES } from "./categories";
-import { canManageCategory, isScopedManager } from "./categories";
 
 
 export const betInclude = {
@@ -215,10 +214,8 @@ export async function placeWager(user: SessionUser, betId: string, optionId: str
   if (bet.status !== "OPEN") throw conflict("Ce pari n'est pas ouvert.");
   if (bet.closesAt.getTime() <= Date.now()) throw conflict("Les mises sont fermées pour ce pari.");
   if (bet.opensAt && bet.opensAt.getTime() > Date.now()) throw conflict("Les paris sur ce match ne sont pas encore ouverts.");
-  // A sport manager enters the score of these matches: no betting on them (conflict of interest).
-  if ((bet.match || bet.matchBracketId) && isScopedManager(user) && canManageCategory(user, bet.category)) {
-    throw forbidden("Tu gères ce sport : tu ne peux pas parier sur ses matchs.");
-  }
+  // Sport managers may bet on the sports they run (school's choice). They still
+  // cannot set fixed odds, so a pool only redistributes what players staked.
   const option = bet.options.find((o) => o.id === optionId);
   if (!option) throw badRequest("Option inconnue.");
   if (bet.oddsEnabled && !option.oddsX100) throw conflict("Cette option n'a pas encore de cote.");

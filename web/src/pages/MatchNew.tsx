@@ -176,8 +176,7 @@ export function MatchNewPage() {
               </label>
             ) : (
               <p style={{ color: "var(--ink-2)", fontSize: 14 }}>
-                Pari en cagnotte : les gagnants se partagent les mises. Les cotes fixes sont réservées aux admins et modérateurs. En tant que
-                responsable de ce sport, tu ne pourras pas parier sur ce match.
+                Pari en cagnotte : les gagnants se partagent les mises. Les cotes fixes sont réservées aux admins et modérateurs.
               </p>
             )}
             {staff && oddsEnabled && (

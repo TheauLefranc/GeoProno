@@ -34,7 +34,7 @@ export function BracketPage() {
 
 function BracketDetail({ b }: { b: Bracket }) {
   const open = b.state === "OPEN";
-  const canPredict = open && b.canEnter;
+  const canPredict = open;
   const [view, setView] = useState<"picks" | "results">(canPredict ? "picks" : "results");
   // Results view: whose prediction is compared with the real outcomes.
   const [compareWith, setCompareWith] = useState<string | null>(null);

@@ -153,7 +153,6 @@ export interface Bracket {
   entryCount: number;
   maxPoints: number;
   canManage: boolean;
-  canEnter: boolean;
   myEntry: BracketEntrySummary | null;
   /** Only after the lock, on the detail endpoint */
   standings: (BracketEntrySummary & { userId: string; username: string })[] | null;
