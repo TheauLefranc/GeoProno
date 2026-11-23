@@ -47,7 +47,8 @@ matchesRouter.get("/", async (req, res) => {
   const byView = {
     upcoming: { where: { status: "SCHEDULED" }, orderBy: { startsAt: "asc" } },
     live: { where: { status: "LIVE" }, orderBy: { startsAt: "asc" } },
-    results: { where: { status: { in: ["FINISHED", "CANCELLED"] } }, orderBy: { startsAt: "desc" } },
+    // Cancelled matches never happened: they stay out of the past results.
+    results: { where: { status: "FINISHED" }, orderBy: { startsAt: "desc" } },
   } as const satisfies Record<string, { where: Prisma.MatchWhereInput; orderBy: Prisma.MatchOrderByWithRelationInput }>;
   const v = byView[q.view];
   const [matches, liveCount] = await Promise.all([
