@@ -45,6 +45,8 @@ export interface Bet {
   /** Match bets: wagers refused before this date */
   opensAt: string | null;
   matchId: string | null;
+  /** Bets of a bracket: only played from the bracket page. */
+  bracketId: string | null;
   votesRequired: number;
   voteCount: number;
   myVote: boolean;
@@ -111,7 +113,44 @@ export interface WagerHistory {
   status: WagerStatus;
   createdAt: string;
   optionLabel: string;
-  bet: { id: string; title: string; category: string; status: BetStatus; closesAt: string; oddsEnabled: boolean };
+  bet: { id: string; title: string; category: string; status: BetStatus; closesAt: string; oddsEnabled: boolean; bracketId: string | null };
+}
+
+export type BracketState = "OPEN" | "LOCKED" | "SETTLED" | "CANCELLED";
+
+export interface BracketEntrySummary {
+  picks: number[];
+  amount: number;
+  points: number;
+  payout: number | null;
+  status: WagerStatus;
+}
+
+export interface Bracket {
+  id: string;
+  title: string;
+  category: string;
+  size: number;
+  /** First-round slots, "" = bye */
+  participants: string[];
+  /** Winner slot of each match, null until played */
+  outcomes: (number | null)[];
+  scores: (string | null)[];
+  /** OPEN: predictions accepted; LOCKED: being played */
+  state: BracketState;
+  locksAt: string;
+  settledAt: string | null;
+  createdAt: string;
+  createdBy: { id: string; username: string };
+  betId: string;
+  pool: number;
+  entryCount: number;
+  maxPoints: number;
+  canManage: boolean;
+  canEnter: boolean;
+  myEntry: BracketEntrySummary | null;
+  /** Only after the lock, on the detail endpoint */
+  standings: (BracketEntrySummary & { userId: string; username: string })[] | null;
 }
 
 export interface GroupSummary {

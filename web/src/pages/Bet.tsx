@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { api, type Bet } from "../lib/api";
@@ -30,6 +30,8 @@ export function BetPage() {
         <Skeletons n={1} h={320} />
       ) : bet.error ? (
         <ErrorBox error={bet.error} retry={() => bet.refetch()} />
+      ) : bet.data!.bracketId ? (
+        <Navigate to={`/tableaux/${bet.data!.bracketId}`} replace />
       ) : (
         <BetDetail bet={bet.data!} />
       )}

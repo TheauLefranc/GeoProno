@@ -128,7 +128,7 @@ function WagerList() {
     <ul className="list">
       {q.data!.map((w) => (
         <li key={w.id}>
-          <Link to={`/paris/${w.bet.id}`} className="list-item">
+          <Link to={w.bet.bracketId ? `/tableaux/${w.bet.bracketId}` : `/paris/${w.bet.id}`} className="list-item">
             <div className="list-main">
               <div className="list-title">{w.bet.title}</div>
               <div className="list-sub">

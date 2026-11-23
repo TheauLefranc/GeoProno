@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Trophy } from "lucide-react";
 import { api, type Match } from "../lib/api";
 import { useSession } from "../lib/session";
 import { canManageMatches } from "../lib/categories";
@@ -63,11 +63,16 @@ export function MatchesPage() {
     <div className="page" style={{ paddingBottom: 24 }}>
       <div className="page-head">
         <h1>Matchs</h1>
-        {canManageMatches(user) && (
-          <Link to="/matchs/nouveau" className="btn btn-dark btn-sm">
-            <Plus size={18} aria-hidden /> Ajouter
+        <div className="row" style={{ gap: 8 }}>
+          <Link to="/tableaux" className="btn btn-ghost btn-sm">
+            <Trophy size={16} aria-hidden /> Phases finales
           </Link>
-        )}
+          {canManageMatches(user) && (
+            <Link to="/matchs/nouveau" className="btn btn-dark btn-sm">
+              <Plus size={18} aria-hidden /> Ajouter
+            </Link>
+          )}
+        </div>
       </div>
       <CategoryFilter value={category} onChange={setCategory} />
       <div className="segmented" role="group" aria-label="Période" style={{ margin: "12px 0" }}>

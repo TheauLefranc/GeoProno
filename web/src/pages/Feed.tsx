@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ChevronRight, Plus, Trophy } from "lucide-react";
+import { useBrackets } from "./Brackets";
 import { api, type Bet } from "../lib/api";
 import { BetCard } from "../components/BetCard";
 import { CategoryFilter, type CategoryValue } from "../components/CategoryFilter";
@@ -26,6 +27,27 @@ export function useBets(view: string, filter: CategoryValue = {}, groupId?: stri
   });
 }
 
+/** Brackets still taking predictions: they are not bets of the feed, so they get a strip of their own. */
+function OpenBrackets() {
+  const q = useBrackets("active");
+  const open = (q.data ?? []).filter((b) => b.state === "OPEN");
+  if (!open.length) return null;
+  return (
+    <div className="stack" style={{ gap: 8, marginBottom: 12 }}>
+      {open.map((b) => (
+        <Link key={b.id} to={`/tableaux/${b.id}`} className="panel bracket-teaser">
+          <Trophy size={20} aria-hidden />
+          <span className="grow">
+            <strong>{b.title}</strong>
+            <small>{b.myEntry ? "Ton tableau est enregistré · modifiable jusqu'au début" : "Pronostique tout le tableau des phases finales"}</small>
+          </span>
+          <ChevronRight size={18} aria-hidden />
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export function FeedPage() {
   const [view, setView] = useState<View>("open");
   const [category, setCategory] = useState<CategoryValue>({});
@@ -47,6 +69,8 @@ export function FeedPage() {
           </button>
         ))}
       </div>
+
+      {view === "open" && <OpenBrackets />}
 
       {bets.isLoading ? (
         <Skeletons />

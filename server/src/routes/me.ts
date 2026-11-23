@@ -13,7 +13,18 @@ meRouter.get("/wagers", async (req, res) => {
     take: 200,
     include: {
       option: { select: { label: true } },
-      bet: { select: { id: true, title: true, category: true, status: true, closesAt: true, oddsEnabled: true, winningOptionId: true } },
+      bet: {
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          status: true,
+          closesAt: true,
+          oddsEnabled: true,
+          winningOptionId: true,
+          bracket: { select: { id: true } },
+        },
+      },
     },
   });
   res.json({
@@ -25,7 +36,7 @@ meRouter.get("/wagers", async (req, res) => {
       status: w.status,
       createdAt: w.createdAt,
       optionLabel: w.option.label,
-      bet: w.bet,
+      bet: { ...w.bet, bracket: undefined, bracketId: w.bet.bracket?.id ?? null },
     })),
   });
 });

@@ -12,6 +12,7 @@ import { leaderboardRouter } from "./routes/leaderboard";
 import { groupsRouter } from "./routes/groups";
 import { adminRouter } from "./routes/admin";
 import { matchesRouter } from "./routes/matches";
+import { bracketsRouter } from "./routes/brackets";
 
 export function createApp() {
   const app = express();
@@ -38,6 +39,7 @@ export function createApp() {
   app.use("/api/groups", groupsRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/matches", matchesRouter);
+  app.use("/api/brackets", bracketsRouter);
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "Route inconnue" });
   });

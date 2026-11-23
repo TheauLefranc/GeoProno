@@ -16,7 +16,16 @@ export const betInclude = {
   options: { orderBy: { position: "asc" } },
   _count: { select: { votes: true } },
   match: { select: { id: true } },
+  bracket: { select: { id: true } },
 } satisfies Prisma.BetInclude;
+
+/**
+ * A bracket's bet only moves through its bracket page (entries with picks,
+ * results per match): every generic bet action refuses it.
+ */
+function assertNotBracket(bet: { bracket: { id: string } | null }) {
+  if (bet.bracket) throw conflict("Ce pari appartient à un tableau : gère-le depuis la page du tableau.");
+}
 
 export type BetRow = Prisma.BetGetPayload<{ include: typeof betInclude }>;
 
@@ -85,6 +94,7 @@ export async function serializeBets(bets: BetRow[], user?: SessionUser) {
       opensAt: b.opensAt,
       acceptingWagers: b.status === "OPEN" && b.closesAt.getTime() > now && (!b.opensAt || b.opensAt.getTime() <= now),
       matchId: b.match?.id ?? null,
+      bracketId: b.bracket?.id ?? null,
       votesRequired: b.votesRequired,
       voteCount: b._count.votes,
       myVote: voted.has(b.id),
@@ -196,6 +206,7 @@ export async function placeWager(user: SessionUser, betId: string, optionId: str
   if (!Number.isInteger(amount) || amount < settings.minStake) throw badRequest(`Mise minimum : ${settings.minStake}.`);
   if (amount > settings.maxStake) throw badRequest(`Mise maximum : ${settings.maxStake}.`);
   const bet = await loadBet(betId, user);
+  assertNotBracket(bet);
   if (bet.status !== "OPEN") throw conflict("Ce pari n'est pas ouvert.");
   if (bet.closesAt.getTime() <= Date.now()) throw conflict("Les mises sont fermées pour ce pari.");
   if (bet.opensAt && bet.opensAt.getTime() > Date.now()) throw conflict("Les paris sur ce match ne sont pas encore ouverts.");
@@ -234,6 +245,7 @@ export async function placeWager(user: SessionUser, betId: string, optionId: str
 
 export async function setStatusFromModeration(user: SessionUser, betId: string, action: "approve" | "reject") {
   const bet = await loadBet(betId, user);
+  assertNotBracket(bet);
   if (!canModerate(bet, user)) throw forbidden();
   if (bet.status !== "PROPOSED") throw conflict("Ce pari n'est plus en phase de vote.");
   if (action === "approve" && bet.oddsEnabled && bet.options.some((o) => !o.oddsX100)) {
@@ -248,6 +260,7 @@ export async function setStatusFromModeration(user: SessionUser, betId: string, 
 export async function updateOdds(user: SessionUser, betId: string, oddsEnabled: boolean, odds: Record<string, number>) {
   const settings = await getSettings();
   const bet = await loadBet(betId, user);
+  assertNotBracket(bet);
   if (!canModerate(bet, user)) throw forbidden();
   if (bet.status !== "PROPOSED" && bet.status !== "OPEN") throw conflict("Ce pari est terminé.");
   if (oddsEnabled && bet.groupId) throw badRequest("Les paris de groupe fonctionnent en cagnotte : pas de cotes fixes.");
@@ -270,6 +283,7 @@ export async function updateOdds(user: SessionUser, betId: string, oddsEnabled: 
 
 export async function settleBet(user: SessionUser, betId: string, winningOptionId: string) {
   const bet = await loadBet(betId, user);
+  assertNotBracket(bet);
   if (!canModerate(bet, user)) throw forbidden();
   await settleLoadedBet(bet, winningOptionId);
 }
@@ -312,6 +326,7 @@ export async function settleLoadedBet(bet: BetRow, winningOptionId: string) {
 
 export async function cancelBet(user: SessionUser, betId: string) {
   const bet = await loadBet(betId, user);
+  assertNotBracket(bet);
   const ownProposal = bet.status === "PROPOSED" && bet.creatorId === user.id;
   if (!canModerate(bet, user) && !ownProposal) throw forbidden();
   await cancelLoadedBet(bet);
@@ -342,6 +357,7 @@ export async function cancelLoadedBet(bet: BetRow) {
  */
 export async function changeBetCategory(user: SessionUser, betId: string, category: string) {
   const bet = await loadBet(betId, user);
+  assertNotBracket(bet);
   if (!canModerate(bet, user)) throw forbidden();
   if (bet.category === category) return;
   await prisma.$transaction([

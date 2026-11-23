@@ -1730,3 +1730,218 @@ a.list-item:hover {
 .cat-edit.open {
   justify-content: stretch;
 }
+
+/* ───────── Phases finales (bracket) ───────── */
+.bracket-row {
+  grid-template-columns: minmax(0, 1fr) 18px;
+}
+.bracket-teaser {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--panel-text);
+  text-decoration: none;
+  box-shadow: var(--shadow), inset 3px 0 0 var(--gold);
+}
+.bracket-teaser > svg:first-child {
+  color: var(--gold);
+  flex: none;
+}
+.bracket-teaser .grow {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.bracket-teaser small {
+  font-size: 12px;
+  color: var(--panel-muted);
+}
+.bracket-teaser:hover {
+  background: var(--panel-2);
+}
+
+/* One column per round; columns stretch to the same height and spread their
+   matches evenly, which centres every match on the two it comes from. */
+.bracket {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  margin: 0 -16px;
+  padding: 0 16px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-line) transparent;
+}
+.bracket-round {
+  flex: 0 0 min(62vw, 200px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-snap-align: start;
+}
+.bracket-champ {
+  flex-basis: min(44vw, 150px);
+}
+.bracket-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--panel-line);
+}
+.bracket-pts {
+  font: 600 11px/1 var(--font-c);
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+.bracket-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 10px;
+}
+.bm {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-s);
+  background: var(--panel-2);
+  border: 1px solid var(--panel-line);
+}
+.bm.is-bye {
+  opacity: 0.6;
+}
+.bm.is-selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+.bs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--panel-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms var(--ease);
+}
+.bs:hover:not(:disabled) {
+  background: var(--panel-3);
+}
+.bs:disabled {
+  cursor: default;
+}
+.bs-name {
+  flex: 1;
+  min-width: 0;
+  font: 700 14px/1.15 var(--font-c);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs.empty .bs-name {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  font-style: italic;
+  color: var(--panel-muted);
+}
+.bs.win {
+  background: var(--panel-3);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.bs.win .bs-name {
+  color: var(--gold);
+}
+.bs.out .bs-name {
+  color: var(--panel-muted);
+  font-weight: 600;
+}
+.bs-ok {
+  color: var(--gold);
+  flex: none;
+}
+.bs-bad {
+  color: var(--odds-long);
+  flex: none;
+}
+.bs-wait {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--blue-hi);
+}
+.bm-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 8px;
+  padding: 2px 8px 3px;
+  font-size: 11px;
+  color: var(--panel-muted);
+}
+.bm-foot .bs-bad {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.champ {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border-radius: var(--radius-s);
+  border: 1px dashed var(--panel-line);
+  color: var(--panel-muted);
+  text-align: center;
+  font: 700 15px/1.15 var(--font-c);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.champ.on {
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  background: rgb(242 185 49 / 0.08);
+}
+
+/* Seeding form: participants entered match by match */
+.seed-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+}
+.seed-pair {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  min-width: 0;
+}
+.seed-pair legend {
+  padding: 0 4px;
+  color: var(--ink-3);
+}
+.seed-pair.dark {
+  border-color: var(--panel-line);
+  background: transparent;
+}
+.seed-pair.dark legend {
+  color: var(--panel-muted);
+}

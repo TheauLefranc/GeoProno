@@ -16,6 +16,9 @@ import { MatchesPage } from "./pages/Matches";
 import { MatchPage } from "./pages/Match";
 import { MatchNewPage } from "./pages/MatchNew";
 import { ResetPasswordPage } from "./pages/ResetPassword";
+import { BracketsPage } from "./pages/Brackets";
+import { BracketNewPage } from "./pages/BracketNew";
+import { BracketPage } from "./pages/Bracket";
 
 export function App() {
   const { user, loading } = useSession();
@@ -48,6 +51,9 @@ export function App() {
         <Route path="matchs" element={<MatchesPage />} />
         <Route path="matchs/nouveau" element={<MatchNewPage />} />
         <Route path="matchs/:id" element={<MatchPage />} />
+        <Route path="tableaux" element={<BracketsPage />} />
+        <Route path="tableaux/nouveau" element={<BracketNewPage />} />
+        <Route path="tableaux/:id" element={<BracketPage />} />
         <Route path="votes" element={<VotesPage />} />
         <Route path="proposer" element={<ProposePage />} />
         <Route path="paris/:id" element={<BetPage />} />

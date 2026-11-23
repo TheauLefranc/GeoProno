@@ -70,7 +70,8 @@ betsRouter.get("/", async (req, res) => {
   };
   const v = byView[q.view];
   const bets = await prisma.bet.findMany({
-    where: { AND: [scope, v.where, categoryFilter] },
+    // Bracket bets live on their bracket page (one prediction for the whole tree).
+    where: { AND: [scope, v.where, categoryFilter, { bracket: null }] },
     orderBy: v.orderBy,
     include: betInclude,
     take: 60,
@@ -84,7 +85,7 @@ betsRouter.get("/counts", async (req, res) => {
   const scope: Prisma.BetWhereInput = { OR: [{ groupId: null }, { group: { members: { some: { userId: user.id } } } }] };
   const [proposedToVote, awaiting] = await Promise.all([
     prisma.bet.count({ where: { AND: [scope, { status: "PROPOSED", closesAt: { gt: now }, votes: { none: { userId: user.id } } }] } }),
-    prisma.bet.count({ where: { AND: [scope, { status: "OPEN", closesAt: { lte: now } }] } }),
+    prisma.bet.count({ where: { AND: [scope, { status: "OPEN", closesAt: { lte: now }, bracket: null }] } }),
   ]);
   res.json({ proposedToVote, awaiting });
 });

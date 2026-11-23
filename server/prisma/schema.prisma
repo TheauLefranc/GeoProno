@@ -44,18 +44,18 @@ enum GroupRole {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  username       String   @unique
-  passwordHash   String
-  role           Role     @default(USER)
-  balance        Int      @default(0)
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  passwordHash      String
+  role              Role     @default(USER)
+  balance           Int      @default(0)
   /// Bumped on password reset/change: sessions signed with an older value are rejected.
-  sessionVersion Int      @default(0)
+  sessionVersion    Int      @default(0)
   /// Sport managers: category ids this user may run matches for (main ids like
   /// "SPORT" cover all their subcategories). Admins/moderators manage everything.
   managedCategories String[] @default([])
-  createdAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
 
   wagers                Wager[]
   votes                 BetVote[]
@@ -64,6 +64,8 @@ model User {
   memberships           GroupMember[]
   ownedGroups           Group[]         @relation("GroupOwner")
   matches               Match[]         @relation("MatchCreator")
+  brackets              Bracket[]       @relation("BracketCreator")
+  bracketEntries        BracketEntry[]
   passwordResets        PasswordReset[] @relation("ResetTarget")
   createdPasswordResets PasswordReset[] @relation("ResetCreator")
 }
@@ -111,6 +113,7 @@ model Bet {
   wagers       Wager[]
   transactions Transaction[]
   match        Match?
+  bracket      Bracket?
 
   @@index([status, closesAt])
   @@index([groupId])
@@ -153,6 +156,53 @@ model Match {
   @@index([status])
 }
 
+/// Knockout bracket ("phases finales"): staff place the participants, players
+/// predict the whole tree before the lock. Money goes through the linked Bet
+/// (one option, one wager per entry), so history, refunds and the leaderboard
+/// work unchanged. Structure and maths: services/bracketLogic.ts.
+model Bracket {
+  id           String   @id @default(cuid())
+  title        String
+  category     String
+  /// Number of first-round slots (4, 8, 16 or 32).
+  size         Int
+  /// First-round slots in bracket order; "" is a bye.
+  participants String[]
+  /// Winner (slot index) of each match in bracket order, null until played.
+  outcomes     Json
+  /// Optional score text per match ("3-1", "2 sets à 1"…).
+  scores       Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation("BracketCreator", fields: [createdById], references: [id])
+  betId       String @unique
+  bet         Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+
+  entries BracketEntry[]
+
+  @@index([createdAt])
+}
+
+/// One player's prediction of a whole bracket, paid through its wager.
+model BracketEntry {
+  id        String   @id @default(cuid())
+  /// Predicted winner (slot index) of every match, same order as Bracket.outcomes.
+  picks     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bracketId String
+  bracket   Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wagerId   String  @unique
+  wager     Wager   @relation(fields: [wagerId], references: [id], onDelete: Cascade)
+
+  @@unique([bracketId, userId])
+}
+
 model BetOption {
   id       String @id @default(cuid())
   label    String
@@ -184,12 +234,13 @@ model Wager {
   status    WagerStatus @default(PENDING)
   createdAt DateTime    @default(now())
 
-  userId   String
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  betId    String
-  bet      Bet       @relation(fields: [betId], references: [id], onDelete: Cascade)
-  optionId String
-  option   BetOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  betId        String
+  bet          Bet           @relation(fields: [betId], references: [id], onDelete: Cascade)
+  optionId     String
+  option       BetOption     @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  bracketEntry BracketEntry?
 
   @@index([userId])
   @@index([betId])
