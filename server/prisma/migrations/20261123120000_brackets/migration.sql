@@ -1,8 +1,3 @@
--- AlterTable
-ALTER TABLE "Bet" ADD COLUMN     "bracketMatchIndex" INTEGER,
-ADD COLUMN     "bracketSlots" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
-ADD COLUMN     "matchBracketId" TEXT;
-
 -- CreateTable
 CREATE TABLE "Bracket" (
     "id" TEXT NOT NULL,
@@ -12,7 +7,6 @@ CREATE TABLE "Bracket" (
     "participants" TEXT[],
     "outcomes" JSONB NOT NULL,
     "scores" JSONB NOT NULL,
-    "times" JSONB NOT NULL DEFAULT '[]',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "createdById" TEXT NOT NULL,
@@ -45,12 +39,6 @@ CREATE UNIQUE INDEX "BracketEntry_wagerId_key" ON "BracketEntry"("wagerId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "BracketEntry_bracketId_userId_key" ON "BracketEntry"("bracketId", "userId");
-
--- CreateIndex
-CREATE INDEX "Bet_matchBracketId_idx" ON "Bet"("matchBracketId");
-
--- AddForeignKey
-ALTER TABLE "Bet" ADD CONSTRAINT "Bet_matchBracketId_fkey" FOREIGN KEY ("matchBracketId") REFERENCES "Bracket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Bracket" ADD CONSTRAINT "Bracket_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
