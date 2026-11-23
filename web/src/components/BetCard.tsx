@@ -74,7 +74,7 @@ export function BetCard({ bet, linkTitle = true, inMatch = false }: { bet: Bet; 
     <article className="panel board" aria-label={bet.title}>
       <div className="board-strip">
         <span className="label-c">
-          {categoryPath(bet.category)}
+          {bet.bracketMatch && bet.description ? bet.description : categoryPath(bet.category)}
           {bet.group ? ` · ${bet.group.name}` : ""}
         </span>
         <div className={`clock${open && msLeft < 3600_000 ? " soon" : ""}`}>
@@ -257,6 +257,11 @@ export function BetCard({ bet, linkTitle = true, inMatch = false }: { bet: Bet; 
             Voir le match
           </Link>
         )}
+        {bet.bracketMatch && !inMatch && (
+          <Link to={`/tableaux/${bet.bracketMatch.bracketId}`} className="label-c" style={{ color: "var(--blue-hi)" }}>
+            Voir le tableau
+          </Link>
+        )}
         {!open && !notYetOpen && !settled && !cancelled && (
           <span className="label-c">
             <Lock size={11} aria-hidden /> {when(bet.closesAt)}
@@ -283,7 +288,7 @@ export function BetCard({ bet, linkTitle = true, inMatch = false }: { bet: Bet; 
           {cancelled && <span>Remboursée</span>}
         </div>
       )}
-      {awaiting && bet.canModerate && !bet.matchId && (
+      {awaiting && bet.canModerate && !bet.matchId && !bet.bracketMatch && (
         <Link to={`/paris/${bet.id}`} className="btn btn-ghost btn-sm">
           Saisir le résultat
         </Link>

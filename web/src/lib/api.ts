@@ -47,6 +47,8 @@ export interface Bet {
   matchId: string | null;
   /** Bets of a bracket: only played from the bracket page. */
   bracketId: string | null;
+  /** Bet on one match of a bracket: settled by that match result on the bracket page. */
+  bracketMatch: { bracketId: string; bracketTitle: string; index: number } | null;
   votesRequired: number;
   voteCount: number;
   myVote: boolean;
@@ -136,6 +138,10 @@ export interface Bracket {
   /** Winner slot of each match, null until played */
   outcomes: (number | null)[];
   scores: (string | null)[];
+  /** Kick-off per match (ISO), closes that match bet */
+  times: (string | null)[];
+  /** Pool bet of each match once both entrants are known */
+  matchBets: { match: number; betId: string; status: BetStatus; closesAt: string; acceptingWagers: boolean }[];
   /** OPEN: predictions accepted; LOCKED: being played */
   state: BracketState;
   locksAt: string;

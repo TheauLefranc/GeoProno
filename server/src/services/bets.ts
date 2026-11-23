@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { prisma } from "../lib/db";
+import { prisma, type Tx } from "../lib/db";
 import { badRequest, conflict, forbidden, notFound } from "../lib/http";
 import { isStaff, type SessionUser } from "../lib/auth";
 import { applyBalanceChange } from "./ledger";
@@ -17,14 +17,16 @@ export const betInclude = {
   _count: { select: { votes: true } },
   match: { select: { id: true } },
   bracket: { select: { id: true } },
+  matchBracket: { select: { id: true, title: true } },
 } satisfies Prisma.BetInclude;
 
 /**
- * A bracket's bet only moves through its bracket page (entries with picks,
- * results per match): every generic bet action refuses it.
+ * Bracket bets only move through their bracket page: the whole-tree bet takes
+ * entries with picks, a match bet is settled by that match result. Generic
+ * settle / cancel / odds / category actions refuse both.
  */
-function assertNotBracket(bet: { bracket: { id: string } | null }) {
-  if (bet.bracket) throw conflict("Ce pari appartient à un tableau : gère-le depuis la page du tableau.");
+function assertNotBracket(bet: { bracket: { id: string } | null; matchBracketId: string | null }) {
+  if (bet.bracket || bet.matchBracketId) throw conflict("Ce pari appartient à un tableau : gère-le depuis la page du tableau.");
 }
 
 export type BetRow = Prisma.BetGetPayload<{ include: typeof betInclude }>;
@@ -95,6 +97,8 @@ export async function serializeBets(bets: BetRow[], user?: SessionUser) {
       acceptingWagers: b.status === "OPEN" && b.closesAt.getTime() > now && (!b.opensAt || b.opensAt.getTime() <= now),
       matchId: b.match?.id ?? null,
       bracketId: b.bracket?.id ?? null,
+      /** Bet on one match of a bracket: settled by that match result. */
+      bracketMatch: b.matchBracket ? { bracketId: b.matchBracket.id, bracketTitle: b.matchBracket.title, index: b.bracketMatchIndex } : null,
       votesRequired: b.votesRequired,
       voteCount: b._count.votes,
       myVote: voted.has(b.id),
@@ -206,12 +210,13 @@ export async function placeWager(user: SessionUser, betId: string, optionId: str
   if (!Number.isInteger(amount) || amount < settings.minStake) throw badRequest(`Mise minimum : ${settings.minStake}.`);
   if (amount > settings.maxStake) throw badRequest(`Mise maximum : ${settings.maxStake}.`);
   const bet = await loadBet(betId, user);
-  assertNotBracket(bet);
+  // The whole-tree bet takes a full prediction (bracket page); a bracket match bet is a normal pool.
+  if (bet.bracket) throw conflict("Ce pari se joue en remplissant le tableau complet, depuis sa page.");
   if (bet.status !== "OPEN") throw conflict("Ce pari n'est pas ouvert.");
   if (bet.closesAt.getTime() <= Date.now()) throw conflict("Les mises sont fermées pour ce pari.");
   if (bet.opensAt && bet.opensAt.getTime() > Date.now()) throw conflict("Les paris sur ce match ne sont pas encore ouverts.");
   // A sport manager enters the score of these matches: no betting on them (conflict of interest).
-  if (bet.match && isScopedManager(user) && canManageCategory(user, bet.category)) {
+  if ((bet.match || bet.matchBracketId) && isScopedManager(user) && canManageCategory(user, bet.category)) {
     throw forbidden("Tu gères ce sport : tu ne peux pas parier sur ses matchs.");
   }
   const option = bet.options.find((o) => o.id === optionId);
@@ -293,35 +298,39 @@ export async function settleBet(user: SessionUser, betId: string, winningOptionI
  * (settleBet for moderators, finishMatch for whoever manages the match sport).
  */
 export async function settleLoadedBet(bet: BetRow, winningOptionId: string) {
-  const betId = bet.id;
   if (bet.status !== "OPEN") throw conflict("Seul un pari ouvert peut être réglé.");
+  await prisma.$transaction((tx) => settleBetTx(tx, bet, winningOptionId));
+}
+
+type SettleableBet = { id: string; title: string; oddsEnabled: boolean; groupId: string | null; options: { id: string; label: string }[] };
+
+/** Pays out a bet inside the caller's transaction. Claims OPEN -> SETTLED first, so it runs once. */
+export async function settleBetTx(tx: Tx, bet: SettleableBet, winningOptionId: string) {
+  const betId = bet.id;
   const option = bet.options.find((o) => o.id === winningOptionId);
   if (!option) throw badRequest("Option inconnue.");
-
-  await prisma.$transaction(async (tx) => {
-    const claimed = await tx.bet.updateMany({
-      where: { id: betId, status: "OPEN" },
-      data: { status: "SETTLED", settledAt: new Date(), winningOptionId },
-    });
-    if (claimed.count === 0) throw conflict("Ce pari vient d'être réglé par quelqu'un d'autre.");
-    const wagers = await tx.wager.findMany({ where: { betId, status: "PENDING" } });
-    // Group bets created before the pool-only rule may still carry fixed odds:
-    // always pay them as a pool so they cannot mint coins.
-    const results = computePayouts(bet.oddsEnabled && !bet.groupId, wagers, winningOptionId);
-    for (const r of results) {
-      const w = wagers.find((x) => x.id === r.id)!;
-      await tx.wager.update({ where: { id: r.id }, data: { status: r.status, payout: r.payout } });
-      if (r.payout > 0) {
-        await applyBalanceChange(tx, {
-          userId: w.userId,
-          amount: r.payout,
-          type: r.status === "REFUNDED" ? "BET_REFUND" : "BET_PAYOUT",
-          betId,
-          note: r.status === "REFUNDED" ? `${bet.title} · personne n'avait le bon résultat` : `${bet.title} · ${option.label}`,
-        });
-      }
-    }
+  const claimed = await tx.bet.updateMany({
+    where: { id: betId, status: "OPEN" },
+    data: { status: "SETTLED", settledAt: new Date(), winningOptionId },
   });
+  if (claimed.count === 0) throw conflict("Ce pari vient d'être réglé par quelqu'un d'autre.");
+  const wagers = await tx.wager.findMany({ where: { betId, status: "PENDING" } });
+  // Group bets created before the pool-only rule may still carry fixed odds:
+  // always pay them as a pool so they cannot mint coins.
+  const results = computePayouts(bet.oddsEnabled && !bet.groupId, wagers, winningOptionId);
+  for (const r of results) {
+    const w = wagers.find((x) => x.id === r.id)!;
+    await tx.wager.update({ where: { id: r.id }, data: { status: r.status, payout: r.payout } });
+    if (r.payout > 0) {
+      await applyBalanceChange(tx, {
+        userId: w.userId,
+        amount: r.payout,
+        type: r.status === "REFUNDED" ? "BET_REFUND" : "BET_PAYOUT",
+        betId,
+        note: r.status === "REFUNDED" ? `${bet.title} · personne n'avait le bon résultat` : `${bet.title} · ${option.label}`,
+      });
+    }
+  }
 }
 
 export async function cancelBet(user: SessionUser, betId: string) {
@@ -336,19 +345,22 @@ export async function cancelBet(user: SessionUser, betId: string) {
 export async function cancelLoadedBet(bet: BetRow) {
   const betId = bet.id;
   if (bet.status !== "PROPOSED" && bet.status !== "OPEN") throw conflict("Ce pari est déjà terminé.");
+  await prisma.$transaction((tx) => cancelBetTx(tx, { id: betId, title: bet.title }));
+}
 
-  await prisma.$transaction(async (tx) => {
-    const claimed = await tx.bet.updateMany({
-      where: { id: betId, status: { in: ["PROPOSED", "OPEN"] } },
-      data: { status: "CANCELLED", settledAt: new Date() },
-    });
-    if (claimed.count === 0) throw conflict("Ce pari vient d'être modifié.");
-    const wagers = await tx.wager.findMany({ where: { betId, status: "PENDING" } });
-    for (const w of wagers) {
-      await tx.wager.update({ where: { id: w.id }, data: { status: "REFUNDED", payout: w.amount } });
-      await applyBalanceChange(tx, { userId: w.userId, amount: w.amount, type: "BET_REFUND", betId, note: `${bet.title} · annulé` });
-    }
+/** Refunds every pending wager inside the caller's transaction. */
+export async function cancelBetTx(tx: Tx, bet: { id: string; title: string }, note = "annulé") {
+  const betId = bet.id;
+  const claimed = await tx.bet.updateMany({
+    where: { id: betId, status: { in: ["PROPOSED", "OPEN"] } },
+    data: { status: "CANCELLED", settledAt: new Date() },
   });
+  if (claimed.count === 0) throw conflict("Ce pari vient d'être modifié.");
+  const wagers = await tx.wager.findMany({ where: { betId, status: "PENDING" } });
+  for (const w of wagers) {
+    await tx.wager.update({ where: { id: w.id }, data: { status: "REFUNDED", payout: w.amount } });
+    await applyBalanceChange(tx, { userId: w.userId, amount: w.amount, type: "BET_REFUND", betId, note: `${bet.title} · ${note}` });
+  }
 }
 
 /**

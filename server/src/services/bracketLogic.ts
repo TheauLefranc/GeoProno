@@ -54,6 +54,12 @@ export function entrants(size: number, participants: string[], outcomes: (number
 export const isByeMatch = (size: number, participants: string[], match: number) =>
   roundOf(size, match) === 0 && entrants(size, participants, [], match).includes(BYE);
 
+/** "Finale", "Demi-finales", "Quarts de finale"… counted from the end. */
+export function roundLabel(size: number, round: number): string {
+  const fromEnd = roundCount(size) - 1 - round;
+  return ["Finale", "Demi-finales", "Quarts de finale", "Huitièmes", "Seizièmes"][fromEnd] ?? `Tour ${round + 1}`;
+}
+
 /** Points for a correct pick: they double each round, so every round weighs the same. */
 export const pointsFor = (size: number, match: number) => 2 ** roundOf(size, match);
 

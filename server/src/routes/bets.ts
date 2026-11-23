@@ -34,8 +34,19 @@ betsRouter.get("/", async (req, res) => {
       /** Main category (e.g. SPORT): every subcategory under it */
       main: z.enum(MAIN_CATEGORIES).optional(),
       groupId: z.string().optional(),
+      /** Match bets of one bracket, every state but cancelled, in bracket order (view ignored). */
+      bracketId: z.string().optional(),
     })
     .parse(req.query);
+  if (q.bracketId) {
+    const bets = await prisma.bet.findMany({
+      where: { matchBracketId: q.bracketId, status: { in: ["OPEN", "SETTLED"] } },
+      orderBy: { bracketMatchIndex: "asc" },
+      include: betInclude,
+    });
+    res.json({ bets: await serializeBets(bets, req.user) });
+    return;
+  }
   const categoryFilter: Prisma.BetWhereInput = q.category
     ? { category: q.category }
     : q.main

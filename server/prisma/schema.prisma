@@ -113,10 +113,19 @@ model Bet {
   wagers       Wager[]
   transactions Transaction[]
   match        Match?
-  bracket      Bracket?
+  /// Set on the bet of a whole-bracket prediction.
+  bracket      Bracket?      @relation("BracketTreeBet")
+
+  /// Bet on one match of a bracket, opened once both entrants are known and
+  /// settled by that match result. Option position 0/1 = bracketSlots[0]/[1].
+  matchBracketId    String?
+  matchBracket      Bracket? @relation("BracketMatchBets", fields: [matchBracketId], references: [id], onDelete: Cascade)
+  bracketMatchIndex Int?
+  bracketSlots      Int[]    @default([])
 
   @@index([status, closesAt])
   @@index([groupId])
+  @@index([matchBracketId])
 }
 
 enum MatchStatus {
@@ -172,15 +181,18 @@ model Bracket {
   outcomes     Json
   /// Optional score text per match ("3-1", "2 sets à 1"…).
   scores       Json
+  /// Optional kick-off (ISO string) per match: its match bet closes then.
+  times        Json     @default("[]")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   createdById String
   createdBy   User   @relation("BracketCreator", fields: [createdById], references: [id])
   betId       String @unique
-  bet         Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+  bet         Bet    @relation("BracketTreeBet", fields: [betId], references: [id], onDelete: Cascade)
 
-  entries BracketEntry[]
+  entries   BracketEntry[]
+  matchBets Bet[]          @relation("BracketMatchBets")
 
   @@index([createdAt])
 }

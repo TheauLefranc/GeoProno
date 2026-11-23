@@ -11,6 +11,7 @@ import {
   loadBracket,
   lockBracket,
   saveEntry,
+  scheduleMatch,
   serializeBracket,
   setResult,
   updateBracket,
@@ -74,6 +75,13 @@ bracketsRouter.post("/:id/results", async (req, res) => {
     .parse(req.body);
   const result = await setResult(req.user!, param(req, "id"), match, winner, score);
   res.json({ ...result, bracket: serializeBracket(await loadBracket(param(req, "id")), req.user, true) });
+});
+
+/** Kick-off of one match (closes its bet) and/or close its bet right now. */
+bracketsRouter.post("/:id/matches/:match/schedule", async (req, res) => {
+  const opts = z.object({ startsAt: z.coerce.date().nullable().optional(), closeNow: z.boolean().optional() }).parse(req.body);
+  await scheduleMatch(req.user!, param(req, "id"), Number(param(req, "match")), opts);
+  res.json({ bracket: serializeBracket(await loadBracket(param(req, "id")), req.user, true) });
 });
 
 bracketsRouter.post("/:id/cancel", async (req, res) => {

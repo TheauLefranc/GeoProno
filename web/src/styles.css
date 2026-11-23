@@ -1945,3 +1945,21 @@ a.list-item:hover {
 .seed-pair.dark legend {
   color: var(--panel-muted);
 }
+.bm-note.on {
+  color: var(--gold);
+  font-weight: 700;
+}
+.match-sched {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 2px;
+  border-top: 1px dashed var(--panel-line);
+}
+.played summary {
+  cursor: pointer;
+  font: 700 15px/1.2 var(--font-c);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 6px 0;
+}

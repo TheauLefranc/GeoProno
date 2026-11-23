@@ -13,6 +13,8 @@ interface Props {
   onPick?: (match: number, slot: number) => void;
   clickable?: (match: number) => boolean;
   selected?: number | null;
+  /** Small line under a match, e.g. its bet state ("on" = highlighted). */
+  notes?: ({ text: string; on?: boolean } | null)[];
   label: string;
 }
 
@@ -20,7 +22,7 @@ interface Props {
  * Classic knockout tree: one column per round, matches vertically centred on
  * the two they come from. Scrolls sideways inside its panel on a phone.
  */
-export function BracketTree({ size, participants, values, scores, compare, onPick, clickable, selected, label }: Props) {
+export function BracketTree({ size, participants, values, scores, compare, onPick, clickable, selected, notes, label }: Props) {
   const rounds = Array.from({ length: roundCount(size) }, (_, r) => r);
   const champion = values[size - 2];
   const name = (slot: number | null) => (slot === null ? null : slot === BYE ? "Exempt" : participants[slot]);
@@ -65,9 +67,10 @@ export function BracketTree({ size, participants, values, scores, compare, onPic
                       </button>
                     );
                   })}
-                  {(scores?.[i] || lostPick) && (
+                  {(scores?.[i] || lostPick || notes?.[i]) && (
                     <div className="bm-foot">
                       {scores?.[i] && <span>{scores[i]}</span>}
+                      {notes?.[i] && <span className={notes[i]!.on ? "bm-note on" : "bm-note"}>{notes[i]!.text}</span>}
                       {lostPick && (
                         <span className="bs-bad">
                           <X size={11} aria-hidden /> ton choix : {lostPick}

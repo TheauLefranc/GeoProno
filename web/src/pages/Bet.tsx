@@ -62,7 +62,7 @@ function BetDetail({ bet }: { bet: Bet }) {
           <Info k="Fin des mises" v={when(bet.closesAt)} />
           <Info k="Proposé par" v={bet.creator.username} />
           {bet.group && <Info k="Groupe" v={<Link to={`/groupes/${bet.group.id}`}>{bet.group.name}</Link>} />}
-          {!bet.matchId && <Info k="Votes" v={`${bet.voteCount}/${bet.votesRequired}`} />}
+          {!bet.matchId && !bet.bracketMatch && <Info k="Votes" v={`${bet.voteCount}/${bet.votesRequired}`} />}
         </ul>
       </section>
 
@@ -87,8 +87,14 @@ function BetDetail({ bet }: { bet: Bet }) {
         </section>
       )}
 
-      {bet.canModerate && <BetCategory bet={bet} />}
-      {bet.canModerate && <Moderation bet={bet} />}
+      {bet.bracketMatch && (
+        <Link to={`/tableaux/${bet.bracketMatch.bracketId}`} className="btn btn-ghost">
+          Voir le tableau {bet.bracketMatch.bracketTitle}
+        </Link>
+      )}
+      {/* A bracket match bet is settled by the match result, on the bracket page. */}
+      {bet.canModerate && !bet.bracketMatch && <BetCategory bet={bet} />}
+      {bet.canModerate && !bet.bracketMatch && <Moderation bet={bet} />}
 
       {isProposal && bet.creator.id === user?.id && !bet.canModerate && (
         <button

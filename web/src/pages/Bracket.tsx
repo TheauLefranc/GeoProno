@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
-import { api, type Bracket } from "../lib/api";
+import { api, type Bet, type Bracket } from "../lib/api";
+import { BetCard } from "../components/BetCard";
 import { BYE, decisions, entrants, isByeMatch, normalizePicks, parentOf, roundLabel, roundOf } from "../lib/bracket";
-import { categoryPath, coins, countdown, CURRENCY, when } from "../lib/format";
+import { categoryPath, coins, countdown, CURRENCY, signed, when } from "../lib/format";
 import { useAction, useNow, usePublicConfig } from "../lib/hooks";
 import { useSession } from "../lib/session";
 import { BracketTree } from "../components/BracketTree";
@@ -34,7 +35,6 @@ export function BracketPage() {
 function BracketDetail({ b }: { b: Bracket }) {
   const open = b.state === "OPEN";
   const canPredict = open && b.canEnter;
-  const showResults = !open || b.canManage;
   const [view, setView] = useState<"picks" | "results">(canPredict ? "picks" : "results");
   // Results view: whose prediction is compared with the real outcomes.
   const [compareWith, setCompareWith] = useState<string | null>(null);
@@ -43,28 +43,22 @@ function BracketDetail({ b }: { b: Bracket }) {
   return (
     <div className="stack" style={{ gap: 20 }}>
       <Header b={b} />
-      {canPredict && showResults && (
+      {canPredict && (
         <div className="segmented" role="group" aria-label="Affichage">
           <button aria-pressed={view === "picks"} onClick={() => setView("picks")}>
-            Mon pronostic
+            Tableau complet
           </button>
           <button aria-pressed={view === "results"} onClick={() => setView("results")}>
-            Résultats
+            Matchs & résultats
           </button>
         </div>
       )}
       {canPredict && view === "picks" ? (
         <Predict b={b} />
-      ) : showResults ? (
-        <Results b={b} compare={compared ? { name: compared.username, picks: compared.picks } : null} onReset={() => setCompareWith(null)} />
       ) : (
-        <section className="panel board">
-          <BracketTree size={b.size} participants={b.participants} values={b.outcomes} label="Tableau" />
-          <p style={{ color: "var(--panel-muted)", fontSize: 14 }}>
-            Tu gères ce sport : tu ne peux pas pronostiquer ce tableau.
-          </p>
-        </section>
+        <Results b={b} compare={compared ? { name: compared.username, picks: compared.picks } : null} onReset={() => setCompareWith(null)} />
       )}
+      <MatchBets b={b} />
       {b.canManage && <Manage b={b} />}
       {b.standings && <Standings b={b} selected={compareWith} onSelect={(u) => setCompareWith(u)} />}
     </div>
@@ -244,6 +238,14 @@ function Results({ b, compare, onReset }: { b: Bracket; compare: { name: string;
       api<{ settled: boolean }>(`/brackets/${b.id}/results`, { body: v }),
     [["bracket", b.id], ["brackets"]],
   );
+  const schedule = useAction(
+    (v: { match: number; startsAt?: string | null; closeNow?: boolean }) =>
+      api(`/brackets/${b.id}/matches/${v.match}/schedule`, { body: { startsAt: v.startsAt, closeNow: v.closeNow } }),
+    [["bracket", b.id]],
+  );
+  const [time, setTime] = useState("");
+  const selectedBet = selected ? b.matchBets.find((m) => m.match === selected.match && m.status === "OPEN") : undefined;
+  const notes = matchNotes(b);
 
   const canEdit = (i: number) => {
     if (!editable || isByeMatch(b.size, b.participants, i)) return false;
@@ -284,12 +286,18 @@ function Results({ b, compare, onReset }: { b: Bracket; compare: { name: string;
         values={b.outcomes}
         scores={b.scores}
         compare={shown?.picks}
-        onPick={editable ? (match, slot) => {
-          setSelected({ match, winner: slot });
-          setScore(b.scores[match] ?? "");
-        } : undefined}
+        onPick={
+          editable
+            ? (match, slot) => {
+                setSelected({ match, winner: slot });
+                setScore(b.scores[match] ?? "");
+                setTime(b.times[match] ? toLocalInput(b.times[match]!) : "");
+              }
+            : undefined
+        }
         clickable={canEdit}
         selected={selected?.match ?? null}
+        notes={notes}
         label="Résultats du tableau"
       />
       {editable && !selected && <p className="tap-hint">Touche le vainqueur d'un match pour saisir son résultat</p>}
@@ -326,6 +334,46 @@ function Results({ b, compare, onReset }: { b: Bracket; compare: { name: string;
             aria-label="Score du match"
           />
           {result.error && <div className="alert">{result.error.message}</div>}
+          {b.outcomes[selected.match] === null && (
+            <div className="match-sched">
+              <label className="field">
+                <span className="label-c">Heure du match · ses paris ferment alors</span>
+                <input
+                  className="input"
+                  style={{ background: "var(--panel-2)", borderColor: "var(--panel-line)", color: "var(--panel-text)" }}
+                  type="datetime-local"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
+              </label>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  disabled={schedule.isPending}
+                  onClick={() =>
+                    schedule.mutate(
+                      { match: selected.match, startsAt: time ? new Date(time).toISOString() : null },
+                      { onSuccess: () => toast("Heure du match enregistrée") },
+                    )
+                  }
+                >
+                  Enregistrer l'heure
+                </button>
+                {selectedBet?.acceptingWagers && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    disabled={schedule.isPending}
+                    onClick={() => schedule.mutate({ match: selected.match, closeNow: true }, { onSuccess: () => toast("Paris de ce match fermés") })}
+                  >
+                    Fermer ses paris maintenant
+                  </button>
+                )}
+              </div>
+              {schedule.error && <div className="alert">{schedule.error.message}</div>}
+            </div>
+          )}
           <div className="stake-actions">
             <button className="btn btn-gold btn-block" disabled={result.isPending} onClick={() => submit(selected.winner)}>
               {result.isPending ? <Spinner /> : `Valider : ${b.participants[selected.winner]} gagne`}
@@ -342,6 +390,77 @@ function Results({ b, compare, onReset }: { b: Bracket; compare: { name: string;
             </div>
           </div>
         </div>
+      )}
+    </section>
+  );
+}
+
+const hhmm = new Intl.DateTimeFormat("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+
+/** State of each match bet, shown under the match in the tree. */
+function matchNotes(b: Bracket) {
+  const notes: ({ text: string; on?: boolean } | null)[] = Array(b.size - 1).fill(null);
+  for (const m of b.matchBets) {
+    if (m.status !== "OPEN") continue;
+    notes[m.match] = m.acceptingWagers ? { text: "Paris ouverts", on: true } : { text: "Paris fermés" };
+  }
+  b.times.forEach((t, i) => {
+    if (t && b.outcomes[i] === null && notes[i]?.on) notes[i] = { text: `Paris · ${hhmm.format(new Date(t))}`, on: true };
+  });
+  return notes;
+}
+
+/**
+ * Every match gets its own pool bet once its two teams are known: a wrong
+ * first-round pick in the full bracket never stops you betting on the real line-ups.
+ */
+function MatchBets({ b }: { b: Bracket }) {
+  const q = useQuery({
+    queryKey: ["bets", "bracket", b.id],
+    queryFn: () => api<{ bets: Bet[] }>(`/bets?bracketId=${b.id}`).then((d) => d.bets),
+    refetchInterval: 20_000,
+  });
+  if (!q.data) return null;
+  const open = q.data.filter((x) => x.status === "OPEN");
+  const played = q.data.filter((x) => x.status === "SETTLED").reverse();
+  return (
+    <section className="stack" style={{ gap: 12 }} aria-label="Paris match par match">
+      <div>
+        <h2 style={{ font: "700 20px/1.2 var(--font-c)" }}>Paris match par match</h2>
+        <p style={{ color: "var(--ink-2)", fontSize: 14, marginTop: 4 }}>
+          Chaque match s'ouvre aux paris dès que ses deux équipes sont connues, indépendamment de ton tableau complet.
+        </p>
+      </div>
+      {open.length === 0 ? (
+        <p style={{ color: "var(--ink-3)", fontSize: 14 }}>
+          {b.state === "SETTLED" || b.state === "CANCELLED" ? "Tous les matchs sont joués." : "Aucun match ouvert aux paris pour l'instant."}
+        </p>
+      ) : (
+        open.map((bet) => <BetCard key={bet.id} bet={bet} inMatch />)
+      )}
+      {played.length > 0 && (
+        <details className="played">
+          <summary>Matchs joués ({played.length})</summary>
+          <ul className="list" style={{ marginTop: 8 }}>
+            {played.map((bet) => {
+              const winner = bet.options.find((o) => o.id === bet.winningOptionId);
+              const mine = bet.myWagers.reduce((s, w) => s + (w.payout ?? 0) - w.amount, 0);
+              return (
+                <li key={bet.id}>
+                  <Link to={`/paris/${bet.id}`} className="list-item">
+                    <div className="list-main">
+                      <div className="list-title">{bet.title}</div>
+                      <div className="list-sub">
+                        {bet.description?.split(" · ").pop()} · vainqueur : {winner?.label}
+                      </div>
+                    </div>
+                    {bet.myWagers.length > 0 && <span className={`amount ${mine >= 0 ? "pos" : "neg"}`}>{signed(mine)}</span>}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       )}
     </section>
   );
